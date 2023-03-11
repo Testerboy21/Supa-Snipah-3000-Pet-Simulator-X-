@@ -108,6 +108,10 @@ local get_value = function(petType, name, demandScale)
         
         local function convert_data(gemValue, demand)
             -- Calculates the value at which the auto reseller will sell at by factoring demand with orignal gem value
+            --[[
+                For example, if the demand of a pet is 6/10, the demand rate is 0.2 (20%). This is because I subtract 10 (limit) minus 6 (demand score)
+                and multiply that by the demand factor the client sets.
+            ]]
             local conversionFunc = require(game:GetService("ReplicatedStorage"):WaitForChild("Library"):WaitForChild("Functions"):WaitForChild("ParseNumberSmart"))
             local gemValue, demand = gemValue:match('- (.+)'), demand:match('- (.+)') -- '- ' <-- match everything after '-', (.+) <-- include all charcaters
             local lowerScore, upperScore = demand:match("(.+)/(.+)") -- BOOOOOOOOOOOOOOBIESSSSS!
@@ -160,4 +164,4 @@ local get_value = function(petType, name, demandScale)
     end
 end
 
-return get_value -- Example: get_value("Huge", "Huge Pumpkin Cat", 5) <-- The higher the demand scale the less it will be. (In depth response above)
+return get_value -- Example: get_value("Huge", "Huge Pumpkin Cat", 5)
