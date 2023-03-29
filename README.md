@@ -7,7 +7,7 @@
 
 - Optimized booth teleport
 - Automatic pet seller
-- Realtime pet values from [https://petsimulatorvalues.com/]
+- Realtime parsed pet values from https://petsimulatorvalues.com/
 - Automatic gift at specified profit
 - Automatic huge machine (converts sniped exclusives across all accounts)
 - Built in resource limiter for those large account farms
