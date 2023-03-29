@@ -30,6 +30,7 @@ shared.Config = {
     },
 
     PetBlacklist = { -- Automatically deletes if they enter your inventory
+        
     },
 
     Gifter = {
