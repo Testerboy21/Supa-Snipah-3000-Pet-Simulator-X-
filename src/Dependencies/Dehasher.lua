@@ -1,7 +1,7 @@
 local dehash = function(...)
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
     -- Thank you for helping me understand shit https://v3rmillion.net/showthread.php?tid=1200968
-    local library = getrawmetatable(require(game.ReplicatedStorage.Library.Client.Network))
+    local library = getrawmetatable(require(game.ReplicatedStorage:WaitForChild("Library"):WaitForChild("Client"):WaitForChild("Network")))
     local v85 = library.__index
     local v44 = getupvalue(v85, 1)
     local fire = v44.Fire
