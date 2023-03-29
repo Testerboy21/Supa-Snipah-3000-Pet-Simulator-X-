@@ -18,6 +18,6 @@
 
 ## __Requirements__
 
-- Synapse X
+- Synapse X 2.0
 - Roblox account manager (for multi account)
 - Two hands! HYNORK!
