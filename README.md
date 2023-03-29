@@ -1,7 +1,4 @@
-# ~ Da Supa Snipa ~
-## Pet Simulator X Booth Sniper
-
-- Best used on multiple accounts
+# ~ Da Supa Snipa (Pet Simulator X Booth Sniper) ~
 
 ## Features
 
@@ -20,3 +17,4 @@
 - Synapse X (preferably)
 - Roblox account manager (for multi account)
 - Two hands! HYNORK!
+- Use on multiple accounts for best results!
