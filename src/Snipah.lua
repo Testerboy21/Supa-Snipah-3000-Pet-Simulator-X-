@@ -46,7 +46,7 @@ shared.Config = {
 repeat task.wait() until game:IsLoaded()
 
 -- Dependencies
--- local ResourceLimiter = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/437989dd9b6e5ec2ea807a65acb740ca/raw/4e9f331162f6443a17f916441a6bf473743a2594/ResourceLimiter.lua"))()
+local ResourceLimiter = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/437989dd9b6e5ec2ea807a65acb740ca/raw/4e9f331162f6443a17f916441a6bf473743a2594/ResourceLimiter.lua"))()
 local webhook = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/3fc7ca9f505ba4c36adc2a3e49b3f2f9/raw/f5201e21c6a8cf28702effde7c53aadde2fa3146/Webhook.lua"))()
 local dehash = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/91600c1bd5581f069201620fcaaa3242/raw/e7cbc1e0f4fe63b0f67c7bc2c414675192aad588/Dehasher.lua"))()({
     "Toggle Setting",
