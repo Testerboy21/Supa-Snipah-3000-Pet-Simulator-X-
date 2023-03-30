@@ -35,7 +35,7 @@ shared.Config = {
 
     Gifter = {
         targetAccount = "",
-        targetTransferProfit = "1T" -- converted to integer
+        targetTransferProfit = "" -- converted to integer
     },
 
     HugeConverter = {
