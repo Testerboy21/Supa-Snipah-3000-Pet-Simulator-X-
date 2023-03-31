@@ -19,7 +19,7 @@
 ]]
 
 shared.Config = {
-    WebhookURL = "https://discord.com/api/webhooks/1088213616920104971/K0h2klT4kiM7C0fhxV1vImxV945fN6jZa8ciRZhOEEDLolqTwYaaDX7kQ0qGvr2VN31X",
+    WebhookURL = "",
 
     DemandFactor = 4.5, -- (%) The higher the less the pet will sell for. More info in the petValues gist
 
@@ -33,19 +33,16 @@ shared.Config = {
     },
 
     PetBlacklist = { -- Automatically deletes if they enter your inventory
-        "Scary Cat",
-        "Scary Corgi",
-        "Elf Cat",
-        "Elf Dog"
+        
     },
 
     Gifter = {
-        targetAccount = "ROGINBLUKI",
-        targetTransferProfit = "1T" -- converted to integer
+        targetAccount = "",
+        targetTransferProfit = "" -- Example: 1T as an input is converted to an integer for use
     },
 
     HugeConverter = {
-        targetAccount = "consistshelfphrase"
+        targetAccount = ""
     }
 }
 
