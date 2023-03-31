@@ -21,7 +21,7 @@
 shared.Config = {
     WebhookURL = "",
 
-    DemandFactor = 4.5, -- (%) The higher the less the pet will sell for. More info in the petValues gist
+    DemandFactor = 4.5, -- (%) The higher the less the pet will sell for. More info in the ValueParser lua file.
 
     AutoGift = true, -- Will transfer funds to target account once total gems reach target profit
     AutoHugeMachine = true, -- Will transfer exclusives from alt accounts to target account and convert exclusives into a sellable huge pet (Target account must have 100+ storage)
