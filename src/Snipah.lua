@@ -13,12 +13,15 @@
         - Launch roblox as administrator (double removes beta client)
         - Increase launch delay for account manager (120 relaunch 60 launch)
         - Smallest window size
+        - Set priortiy affinity
+
+    The only thing that i think is really ugly is the inventory stuff I have in place but idec anymore
 ]]
 
 shared.Config = {
-    WebhookURL = "",
+    WebhookURL = "https://discord.com/api/webhooks/1088213616920104971/K0h2klT4kiM7C0fhxV1vImxV945fN6jZa8ciRZhOEEDLolqTwYaaDX7kQ0qGvr2VN31X",
 
-    DemandFactor = 3.5, -- (%) The higher the less the pet will sell for. More info in the petValues gist
+    DemandFactor = 4.5, -- (%) The higher the less the pet will sell for. More info in the petValues gist
 
     AutoGift = true, -- Will transfer funds to target account once total gems reach target profit
     AutoHugeMachine = true, -- Will transfer exclusives from alt accounts to target account and convert exclusives into a sellable huge pet (Target account must have 100+ storage)
@@ -30,23 +33,26 @@ shared.Config = {
     },
 
     PetBlacklist = { -- Automatically deletes if they enter your inventory
-        
+        "Scary Cat",
+        "Scary Corgi",
+        "Elf Cat",
+        "Elf Dog"
     },
 
     Gifter = {
-        targetAccount = "",
-        targetTransferProfit = "" -- converted to integer
+        targetAccount = "ROGINBLUKI",
+        targetTransferProfit = "1T" -- converted to integer
     },
 
     HugeConverter = {
-        targetAccount = ""
+        targetAccount = "consistshelfphrase"
     }
 }
 
 repeat task.wait() until game:IsLoaded()
 
 -- Dependencies
-local ResourceLimiter = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/437989dd9b6e5ec2ea807a65acb740ca/raw/4e9f331162f6443a17f916441a6bf473743a2594/ResourceLimiter.lua"))()
+local ResourceLimiter = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/437989dd9b6e5ec2ea807a65acb740ca/raw/9f391877ae9765e065802ffb4f35bc754aa12364/ResourceLimiter.lua"))()
 local webhook = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/3fc7ca9f505ba4c36adc2a3e49b3f2f9/raw/f5201e21c6a8cf28702effde7c53aadde2fa3146/Webhook.lua"))()
 local dehash = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/91600c1bd5581f069201620fcaaa3242/raw/e7cbc1e0f4fe63b0f67c7bc2c414675192aad588/Dehasher.lua"))()({
     "Toggle Setting",
@@ -83,7 +89,7 @@ local abbreviatedInteger = require(ReplicatedStorage.Library.Functions.FormatAbb
 local commasInteger = require(ReplicatedStorage.Library.Functions.Commas) -- "1,000,000"
 local hugeMachinePoints = require(ReplicatedStorage.Library.Shared.Functions.ComputeHugeMachinePoints)
 
-local hasLoaded, hasSetup, hasRequestedCost, actionCompleted, accountsLoaded, toggleCheck, convertedPets = false, false, false, false, false, false, false
+local hasLoaded, hasSetup, hasRequestedCost, actionCompleted, accountsLoaded, toggleCheck, convertedPets, statusUpdate = false, false, false, false, false, false, false, false
 local sniped, success = false, false
 
 local serverUpdateTime = 0.2
@@ -162,7 +168,7 @@ function serverhop(isLowPlayer)
         end
         
         if #servers > 0 then
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)], plr)
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[1], plr)
         else
             if body.nextPageCursor then
                 cursor = body.nextPageCursor
@@ -173,13 +179,11 @@ end
 
 function alt_in_server()
     local count = 0
-
-    local directory = listfiles(mainFolder)
     local playerList = game.Players:GetPlayers()
 
     for i,v in pairs(playerList) do
         if v.Name ~= plr.Name then
-            if table.find(directory, mainFolder .. "\\".. v.Name .. ".json") then
+            if isfile(mainFolder .. "\\".. v.Name .. ".json") then
                 count = count + 1
             end
         end
@@ -196,7 +200,7 @@ function should_server_hop() -- if an alt is in the server or the player count i
     local altInServer, altCount = alt_in_server()
     local playerList = game.Players:GetPlayers()
 
-    if altInServer or #playerList <= (initPlayerCount / 2) then
+    if altInServer or (initPlayerCount and #playerList <= (initPlayerCount / 2)) then
         return true
     end
     
@@ -352,6 +356,8 @@ function get_huge_machine_points()
 end
 
 function delete_pet(id, isRandom)
+    toggleCheck = false
+
     toggle_inventory()
     
     local pet;
@@ -493,26 +499,30 @@ function snipe()
 
                 local converterTable = {points, mainStatus, altStatus, allStatus, readableConfig["ConverterInfo"][4]}
 
-                if shared.Config["AutoGift"] and not isDepositing then 
-                    local totalProfit = get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???"))
+                if not statusUpdate then
+                    if shared.Config["AutoGift"] and not isDepositing then 
+                        local totalProfit = get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???"))
 
-                    if rawInteger(totalProfit) >= rawInteger(shared.Config["Gifter"]["targetTransferProfit"]) then 
-                        if (tonumber(plr.leaderstats.Diamonds.Value) > get_purchase_value("???")) then -- make sure account actually has enough diamonds to cover for the sniping minimum
-                            update_config(statusFolder, isSniping, readableConfig["PetId"], readableConfig["Diamonds"], true, hasConverted, converterTable) -- so I can yield and keep current farming status
-                        end
-                    end
-                end
-                
-                if shared.Config["AutoHugeMachine"] and not isDepositing and not mainStatus and not hasConverted then
-                    if get_total("Points") >= 100 then -- point requirement for free huge (common preston L)
-                        if #get_target_accounts(points) <= 11 then -- Don't want to exceed max player limit
-                            if isMain and clientSave.MaxSlots >= 100 then
-                                local converterTable = {points, true, altStatus, allStatus, readableConfig["ConverterInfo"][4]}
-
-                                update_config(statusFolder, isSniping, readableConfig["PetId"], readableConfig["Diamonds"], isDepositing, hasConverted, converterTable)
+                        if rawInteger(totalProfit) >= rawInteger(shared.Config["Gifter"]["targetTransferProfit"]) then 
+                            if (tonumber(plr.leaderstats.Diamonds.Value) > get_purchase_value("???")) then -- make sure account actually has enough diamonds to cover for the sniping minimum
+                                update_config(statusFolder, isSniping, readableConfig["PetId"], readableConfig["Diamonds"], true, hasConverted, converterTable) -- so I can yield and keep current farming status
                             end
                         end
                     end
+                    
+                    if shared.Config["AutoHugeMachine"] and not isDepositing and not mainStatus and not hasConverted then
+                        if get_total("Points") >= 100 then -- point requirement for free huge (common preston L)
+                            if #get_target_accounts(points) <= 11 then -- Don't want to exceed max player limit
+                                if isMain and clientSave.MaxSlots >= 100 then
+                                    local converterTable = {points, true, altStatus, allStatus, readableConfig["ConverterInfo"][4]}
+
+                                    update_config(statusFolder, isSniping, readableConfig["PetId"], readableConfig["Diamonds"], isDepositing, hasConverted, converterTable)
+                                end
+                            end
+                        end
+                    end
+
+                    statusUpdate = true
                 end
 
                 if game.PlaceId == places[1] then
@@ -520,6 +530,8 @@ function snipe()
                         TeleportService:Teleport(places[2])
                     else
                         if isDepositing then
+                            toggleCheck = true
+                            
                             local mailBox = map:WaitForChild("Interactive"):WaitForChild("Mailbox")
 
                             if #mailBox:GetChildren() > 5 then -- if mailbox is loaded
@@ -542,6 +554,8 @@ function snipe()
                                             Message = ""
                                         })
                                         
+                                        task.wait(1.5)
+
                                         update_config(statusFolder, isSniping, readableConfig["PetId"], tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
 
                                         webhook(shared.Config["WebhookURL"], "https://media.tenor.com/O7Ugp91_nV0AAAAC/nate-jacobs.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " transferred " .. abbreviatedInteger(transferAmount) .. " gems",
@@ -572,49 +586,6 @@ function snipe()
                                 end
                                 
                                 return tradeId
-                            end
-
-                            function get_target_accounts(pointLimit)
-                                local count, freeHuge = 0, 100
-                                local targetAccounts = {}
-                            
-                                local function get_sorted_list()
-                                    local sorted = {}
-                                    
-                                    for i,v in pairs(listfiles(mainFolder)) do
-                                        local file;
-            
-                                        pcall(function() file = HttpService:JSONDecode(readfile(v)) end)
-
-                                        if file then
-                                            local username = v:match("\\(.+)(%.)") -- BOOBIE BONANZA! POOOOOOGGERS!
-                                            
-                                            if username ~= plr.Name then
-                                                table.insert(sorted, {username, file["Points"]})
-                                            end
-                                        end
-                                    end
-                                    
-                                    table.sort(sorted, function(a, b)
-                                        return a[2] > b[2] -- sorting second column by ascending order
-                                    end)
-                                    
-                                    return sorted
-                                end
-                                
-                                local list = get_sorted_list()
-                                
-                                for i,v in pairs(list) do
-                                    if count <= (freeHuge - pointLimit) then -- include main account exclusives in calculation
-                                        if list[i][2] > 0 then -- so we're not teleporting an account with no points lol                                
-                                            table.insert(targetAccounts, list[i][1])
-                                
-                                            count = count + list[i][2]
-                                        end
-                                    end
-                                end
-                                
-                                return targetAccounts
                             end
                             
                             local function convert_exclusives() -- will use for single and multi conversion
@@ -744,7 +715,7 @@ function snipe()
 
                                     local targetAccounts = get_target_accounts(points)
 
-                                    local maxServerSize = 12 
+                                    local maxServerSize = 12
                                     local targetServerSize = maxServerSize - #targetAccounts
 
                                     if get_true_server_size(targetAccounts) > targetServerSize and not allStatus then -- get low player server for all accs
@@ -919,11 +890,11 @@ function snipe()
                     if (isDepositing or mainStatus or altStatus) and not hasConverted or (hasConverted and isDepositing) then -- If we already have accounts actively sniping (most common scenario)
                         TeleportService:Teleport(places[1])
                     else
+                        toggleCheck = true
+
                         if not hasSetup then -- Grab n' set stuff
                             local settings = plr.PlayerGui.Settings
                             local petsToggle = settings.Frame.Container.ShowOtherPets.Toggle.Label
-
-                            toggleCheck = true
 
                             booths = map:WaitForChild("Interactive"):WaitForChild("Booths")
                             boothSpawns = map:WaitForChild("BoothSpawns")
@@ -1021,7 +992,7 @@ function snipe()
                                         end
                                     end
                                     
-                                    if sniped then
+                                    if sniped then                                        
                                         if success and not actionCompleted then
                                             actionCompleted = true
                                             
@@ -1153,13 +1124,15 @@ function snipe()
                                     if hasSold and not actionCompleted then
                                         actionCompleted = true
                                         
+                                        task.wait(1.5)
+
                                         update_config(statusFolder, true, "", tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
 
                                         webhook(shared.Config["WebhookURL"], "https://64.media.tumblr.com/95f63e8e43bdbf73cec4e335fcb47473/598a0a3af7af511b-3e/s500x750/47cb4656753649ca190e90a63d6e5781c6fa9f4e.gif", tonumber(0xACDC7C), "Supa Snipa 3000", nil, "Sale!", 
                                             {["name"] = "Pet", ["value"] = petName},  
                                             {["name"] = "Price", ["value"] = abbreviatedInteger(petCost)},
                                             {["name"] = "Account", ["value"] = hide_text(plr.Name)},
-                                            {["name"] = "Account Diamonds", ["value"] = commasInteger(tonumber(plr.leaderstats.Diamonds.Value) + petCost)}, -- value doesn't update in time so lemme just add bru
+                                            {["name"] = "Account Diamonds", ["value"] = commasInteger(tonumber(plr.leaderstats.Diamonds.Value))}, -- value doesn't update in time so lemme just add bru
                                             {["name"] = "Total Profit", ["value"] = abbreviatedInteger(get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???")))}
                                         )
                                         
@@ -1176,7 +1149,7 @@ function snipe()
                         end
                     end
                 end
-
+                
                 if should_server_hop() and not (mainStatus or altStatus or isDepositing) then                    
                     serverhop(false)
                 end
