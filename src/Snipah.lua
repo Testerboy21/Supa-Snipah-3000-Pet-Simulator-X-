@@ -697,7 +697,6 @@ function snipe()
                                 end
                             else
                                 -- Coded with a little bit of trading magic ✨
-
                                 if mainStatus then
                                     local function get_true_server_size(whitelisted)
                                         local playerCount = 0
