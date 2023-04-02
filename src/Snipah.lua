@@ -11,9 +11,10 @@
 
     # External
         - Launch roblox as administrator (double removes beta client)
-        - Increase launch delay for account manager (120 relaunch 60 launch)
+        - Increase launch delay for account manager (120 relaunch 60+ launch)
         - Smallest window size
-        - Set priortiy affinity
+        - Set priortiy affinity (process lasso or task manager)
+        - rbxfpsunlocker if synapse isn't cutting it (5 fps cap & guardian tool if quits)
 
     The only thing that i think is really ugly is the inventory stuff I have in place but idec anymore
 ]]
@@ -21,24 +22,28 @@
 shared.Config = {
     WebhookURL = "",
 
-    DemandFactor = 4.5, -- (%) The higher the less the pet will sell for. More info in the ValueParser lua file.
+    DemandFactor = 4, -- (%) The higher the less the pet will sell for. More info in the petValues gist
 
-    AutoGift = true, -- Will transfer funds to target account once total gems reach target profit
+    AutoSell = true, -- Resells the sniped pet using cosmic values as a gauge for price
+    AutoGift = true, -- Transfers funds to target account once total gems reach target profit
     AutoHugeMachine = true, -- Will transfer exclusives from alt accounts to target account and convert exclusives into a sellable huge pet (Target account must have 100+ storage)
 
-    ToSnipe = { -- Types: Titanic, Huge, Exclusive. Sub-categories are included (rainbow, gold, etc)
+    ToSnipe = { -- (CASE SENSITIVE SO DON'T MESS UP) Types: Titanic, Huge, Exclusive. Sub-categories are included (rainbow, gold, etc).
         "Titanic",
         "Huge",
         "Exclusive"
     },
 
     PetBlacklist = { -- Automatically deletes if they enter your inventory
-        
+        "Scary Cat",
+        "Scary Corgi",
+        "Elf Cat",
+        "Elf Dog"
     },
 
     Gifter = {
         targetAccount = "",
-        targetTransferProfit = "" -- Example: 1T as an input is converted to an integer for use
+        targetTransferProfit = "1T" -- converted to integer
     },
 
     HugeConverter = {
@@ -49,7 +54,7 @@ shared.Config = {
 repeat task.wait() until game:IsLoaded()
 
 -- Dependencies
-local ResourceLimiter = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/437989dd9b6e5ec2ea807a65acb740ca/raw/9f391877ae9765e065802ffb4f35bc754aa12364/ResourceLimiter.lua"))()
+-- local ResourceLimiter = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/437989dd9b6e5ec2ea807a65acb740ca/raw/1b1f1f38dba23d7f1181c3bbbe7d21631690ab96/ResourceLimiter.lua"))()
 local webhook = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/3fc7ca9f505ba4c36adc2a3e49b3f2f9/raw/f5201e21c6a8cf28702effde7c53aadde2fa3146/Webhook.lua"))()
 local dehash = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/91600c1bd5581f069201620fcaaa3242/raw/e7cbc1e0f4fe63b0f67c7bc2c414675192aad588/Dehasher.lua"))()({
     "Toggle Setting",
@@ -933,16 +938,11 @@ function snipe()
                                                     local cost = buyButton.Cost.Text
                                                     local icon = actualPet.PetIcon.Image
                                                     
-                                                    if rarity == "??" then -- filter out event pets
-                                                        if actualPet.RarityGradient:FindFirstChild("Event") then -- filter out event pets
-                                                            rarity = nil
-                                                        end
-                                                        
-                                                    elseif string.match(rarity, "%d") then -- Include exclusives with numbers
+                                                    if string.match(rarity, "%d") then -- Include exclusives with numbers
                                                         rarity = "??"
                                                     end
                                                     
-                                                    if rarity and table.find(shared.Config["ToSnipe"], purchaseValues[rarity][1]) and rawInteger(cost) <= get_purchase_value(rarity) then
+                                                    if rawInteger(cost) <= get_purchase_value(rarity) then
                                                         local minimumPurchaseDist = (50) - 5 -- Actual min on server is 50 but buffer is included
                                                         local hrp = plr.Character.HumanoidRootPart
                                                         local booth = v.Booth
@@ -956,11 +956,11 @@ function snipe()
                                                         end
                                                         
                                                         task.spawn(function()
-                                                            task.wait(serverUpdateTime)
+                                                            task.wait(serverUpdateTime + 0.01)
                                                             
                                                             ReplicatedStorage["Purchase Trading Booth Pet"]:InvokeServer(tonumber(v.Name), actualPet.Name)
                                                             
-                                                            task.wait(1)
+                                                            task.wait(10)
                                                             
                                                             local hasBought, hasSold = get_recent_transaction()
                                                             
@@ -972,12 +972,14 @@ function snipe()
 
                                                                 local name = get_pet_name(snipedId)
 
-                                                                if not actionCompleted and table.find(shared.Config["PetBlacklist"], name) then
-                                                                    actionCompleted = true
-
-                                                                    delete_pet(snipedId, false)
-
-                                                                    webhook(shared.Config["WebhookURL"], "https://media.tenor.com/ivGGD4yGX-gAAAAC/euphoria-nate.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " deleted " .. name .. " from inventory")
+                                                                if not actionCompleted then
+                                                                    if table.find(shared.Config["PetBlacklist"], name) or (not table.find(shared.Config["ToSnipe"], purchaseValues[rarity][1])) then
+                                                                        actionCompleted = true
+    
+                                                                        delete_pet(snipedId, false)
+    
+                                                                        webhook(shared.Config["WebhookURL"], "https://media.tenor.com/ivGGD4yGX-gAAAAC/euphoria-nate.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " deleted " .. name .. " from inventory")
+                                                                    end
                                                                 end
                                                             end
                                                             
@@ -993,9 +995,16 @@ function snipe()
                                         if success and not actionCompleted then
                                             actionCompleted = true
                                             
-                                            update_config(statusFolder, false, snipedId, tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable) -- keep statuses
+                                            local configChoice = false
+
+                                            if not shared.Config["AutoSell"] then
+                                                configChoice = true
+                                                snipedId = ""
+                                            end
+
+                                            update_config(statusFolder, configChoice, snipedId, tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable) -- keep statuses
                                             
-                                            webhook(shared.Config["WebhookURL"], "https://media.tenor.com/8GivaLmyidAAAAAC/nate-jacobs-nate-euphoria.gif", tonumber(0xC52727), "Supa Snipa 3000", "@everyone", "Snipe!", 
+                                            webhook(shared.Config["WebhookURL"], "https://media.tenor.com/8GivaLmyidAAAAAC/nate-jacobs-nate-euphoria.gif", tonumber(0xC52727), "Supa Snipa 3000", "@everyone", "Snipe!",
                                                 {["name"] = "Pet", ["value"] = get_pet_name(snipedId)},  
                                                 {["name"] = "Price", ["value"] = commasInteger(rawInteger(petCost))},
                                                 {["name"] = "Account", ["value"] = hide_text(plr.Name)}, -- Hide name under spoiler tag
@@ -1006,149 +1015,151 @@ function snipe()
                                         serverhop(false)
                                     end
                                 else
-                                    -- Booth selling thread
-                                    local function get_pet_type_from_name(name) -- For our value grabber function
-                                        local validTypes = {"Huge", "Titanic"}
-                                        local petType;
-                                        
-                                        for i,v in pairs(validTypes) do
-                                            if string.match(name, v) then
-                                                petType = v
-                                            end
-                                        end
-                                        
-                                        if not petType then
-                                            petType = "Exclusive" -- Since exclusive isn't explicity in the pet name  
-                                        end
-                                        
-                                        return petType
-                                    end
-                                    
-                                    local function get_trading_booth()
-                                        local function get_open_booth()
-                                            local openBooth;
+                                    if shared.Config["AutoSell"] then
+                                        -- Booth selling thread
+                                        local function get_pet_type_from_name(name) -- For our value grabber function
+                                            local validTypes = {"Huge", "Titanic"}
+                                            local petType;
                                             
-                                            for i=1, #booths:GetChildren() do
-                                                local booth = booths[tostring(i)] -- Go in order of sorted booths
-                                                local boothInfo = booth.Info
+                                            for i,v in pairs(validTypes) do
+                                                if string.match(name, v) then
+                                                    petType = v
+                                                end
+                                            end
+                                            
+                                            if not petType then
+                                                petType = "Exclusive" -- Since exclusive isn't explicity in the pet name  
+                                            end
+                                            
+                                            return petType
+                                        end
+                                        
+                                        local function get_trading_booth()
+                                            local function get_open_booth()
+                                                local openBooth;
                                                 
-                                                if boothInfo.SurfaceGui.Frame.Top.Text == "Unclaimed Stand" then
-                                                    openBooth = booth
+                                                for i=1, #booths:GetChildren() do
+                                                    local booth = booths[tostring(i)] -- Go in order of sorted booths
+                                                    local boothInfo = booth.Info
                                                     
-                                                    break
-                                                end
-                                            end
-                                            
-                                            return openBooth
-                                        end
-                                        
-                                        local function has_trading_booth()
-                                            for i,v in pairs(booths:GetChildren()) do
-                                                local info = v.Info
-                                                local boothSign = info.SurfaceGui.Frame.Top.Text
-                                                
-                                                if string.find(boothSign, plr.Name) or string.find(boothSign, plr.DisplayName) then
-                                                    return true, v
-                                                end
-                                            end
-                                            
-                                            return false
-                                        end
-                                        
-                                        local hasBooth, claimedBooth = has_trading_booth()
-                                        
-                                        if not hasBooth then
-                                            local openBooth = get_open_booth()
-                                            
-                                            plr.Character.HumanoidRootPart.CFrame = openBooth.Booth.CFrame + Vector3.new(4,0,-1)
-                                            
-                                            task.wait(serverUpdateTime + serverUpdateTime)
-                                            
-                                            ReplicatedStorage["Claim Trading Booth"]:InvokeServer(tonumber(openBooth.Name))
-                                        else
-                                            return claimedBooth
-                                        end
-                                    end
-                                    
-                                    local petId = readableConfig["PetId"]
-
-                                    local hasBought, hasSold = get_recent_transaction()
-                                    local tradingBooth = get_trading_booth()
-                                    
-                                    if tradingBooth then
-                                        if not hasRequestedCost then
-                                            petName = get_pet_name(petId)
-
-                                            local petType = get_pet_type_from_name(petName)
-                                            
-                                            hasRequestedCost = true -- put it above the syn.request call below cuz it suspends the thread and crashes my game lol
-                                                
-                                            petValues = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/339b64b48e8c03a1628f3e73629435fa/raw/d5a6ee1c9613911ee08f4c9505180e47c2c6c967/ValueGrabber.lua"))()
-                                            
-                                            petCost = petValues(petType, petName, shared.Config["DemandFactor"])
-                                        end
-
-                                        if typeof(petCost) == "number" then
-                                            local boothPets = tradingBooth.Pets.SurfaceGui.PetScroll:GetChildren()
-                                            
-                                            if (#boothPets - 3) <= 0 then -- if my pet isn't listed
-                                                ReplicatedStorage["Add Trading Booth Pet"]:InvokeServer({
-                                                    {
-                                                        petId,
-                                                        petCost
-                                                    }
-                                                })
-                                            end
-                                        else
-                                            task.spawn(function() -- reset snipe status after X seconds of waiting
-                                                task.wait(serverUpdateTime * 1500)
-
-                                                if hasRequestedCost and not petCost then
-                                                    if not actionCompleted then
-                                                        actionCompleted = true
-
-                                                        update_config(statusFolder, true, "", tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
+                                                    if boothInfo.SurfaceGui.Frame.Top.Text == "Unclaimed Stand" then
+                                                        openBooth = booth
                                                         
-                                                        webhook(shared.Config["WebhookURL"], "https://64.media.tumblr.com/918059fea5f2e970fa1eaa4b361746cf/ec5f9c88ed936d4f-f1/s400x600/4f1d490ee6065de66efc43c02e1d2b9c2c081d2f.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " could not find pet value for " .. get_pet_name(petId))
+                                                        break
                                                     end
-
-                                                    serverhop(false)
                                                 end
-                                            end)
+                                                
+                                                return openBooth
+                                            end
+                                            
+                                            local function has_trading_booth()
+                                                for i,v in pairs(booths:GetChildren()) do
+                                                    local info = v.Info
+                                                    local boothSign = info.SurfaceGui.Frame.Top.Text
+                                                    
+                                                    if string.find(boothSign, plr.Name) or string.find(boothSign, plr.DisplayName) then
+                                                        return true, v
+                                                    end
+                                                end
+                                                
+                                                return false
+                                            end
+                                            
+                                            local hasBooth, claimedBooth = has_trading_booth()
+                                            
+                                            if not hasBooth then
+                                                local openBooth = get_open_booth()
+                                                
+                                                plr.Character.HumanoidRootPart.CFrame = openBooth.Booth.CFrame + Vector3.new(4,0,-1)
+                                                
+                                                task.wait(serverUpdateTime + serverUpdateTime)
+                                                
+                                                ReplicatedStorage["Claim Trading Booth"]:InvokeServer(tonumber(openBooth.Name))
+                                            else
+                                                return claimedBooth
+                                            end
+                                        end
+                                        
+                                        local petId = readableConfig["PetId"]
+
+                                        local hasBought, hasSold = get_recent_transaction()
+                                        local tradingBooth = get_trading_booth()
+                                        
+                                        if tradingBooth then
+                                            if not hasRequestedCost then
+                                                petName = get_pet_name(petId)
+
+                                                local petType = get_pet_type_from_name(petName)
+                                                
+                                                hasRequestedCost = true -- put it above the syn.request call below cuz it suspends the thread and crashes my game lol
+                                                    
+                                                petValues = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/339b64b48e8c03a1628f3e73629435fa/raw/d5a6ee1c9613911ee08f4c9505180e47c2c6c967/ValueGrabber.lua"))()
+                                                
+                                                petCost = petValues(petType, petName, shared.Config["DemandFactor"])
+                                            end
+
+                                            if typeof(petCost) == "number" then
+                                                local boothPets = tradingBooth.Pets.SurfaceGui.PetScroll:GetChildren()
+                                                
+                                                if (#boothPets - 3) <= 0 then -- if my pet isn't listed
+                                                    ReplicatedStorage["Add Trading Booth Pet"]:InvokeServer({
+                                                        {
+                                                            petId,
+                                                            petCost
+                                                        }
+                                                    })
+                                                end
+                                            else
+                                                task.spawn(function() -- reset snipe status after X seconds of waiting
+                                                    task.wait(serverUpdateTime * 1500)
+
+                                                    if hasRequestedCost and not petCost then
+                                                        if not actionCompleted then
+                                                            actionCompleted = true
+
+                                                            update_config(statusFolder, true, "", tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
+                                                            
+                                                            webhook(shared.Config["WebhookURL"], "https://64.media.tumblr.com/918059fea5f2e970fa1eaa4b361746cf/ec5f9c88ed936d4f-f1/s400x600/4f1d490ee6065de66efc43c02e1d2b9c2c081d2f.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " could not find pet value for " .. get_pet_name(petId))
+                                                        end
+
+                                                        serverhop(false)
+                                                    end
+                                                end)
+                                            end
+                                        end
+
+                                        if hasSold and not actionCompleted then
+                                            actionCompleted = true
+                                            
+                                            task.wait(1.5)
+
+                                            update_config(statusFolder, true, "", tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
+
+                                            webhook(shared.Config["WebhookURL"], "https://64.media.tumblr.com/95f63e8e43bdbf73cec4e335fcb47473/598a0a3af7af511b-3e/s500x750/47cb4656753649ca190e90a63d6e5781c6fa9f4e.gif", tonumber(0xACDC7C), "Supa Snipa 3000", nil, "Sale!", 
+                                                {["name"] = "Pet", ["value"] = petName},  
+                                                {["name"] = "Price", ["value"] = abbreviatedInteger(petCost)},
+                                                {["name"] = "Account", ["value"] = hide_text(plr.Name)},
+                                                {["name"] = "Account Diamonds", ["value"] = commasInteger(tonumber(plr.leaderstats.Diamonds.Value))}, -- value doesn't update in time so lemme just add bru
+                                                {["name"] = "Total Profit", ["value"] = abbreviatedInteger(get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???")))}
+                                            )
+                                            
+                                            if hasConverted then -- done selling converted pet, now we can convert again, snipe, do whatever
+                                                update_config(statusFolder, isSniping, readableConfig["PetId"], readableConfig["Diamonds"], isDepositing, false, converterTable)
+                                            end
+
+                                            serverhop(false)
                                         end
                                     end
-
-                                    if hasSold and not actionCompleted then
-                                        actionCompleted = true
-                                        
-                                        task.wait(1.5)
-
-                                        update_config(statusFolder, true, "", tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
-
-                                        webhook(shared.Config["WebhookURL"], "https://64.media.tumblr.com/95f63e8e43bdbf73cec4e335fcb47473/598a0a3af7af511b-3e/s500x750/47cb4656753649ca190e90a63d6e5781c6fa9f4e.gif", tonumber(0xACDC7C), "Supa Snipa 3000", nil, "Sale!", 
-                                            {["name"] = "Pet", ["value"] = petName},  
-                                            {["name"] = "Price", ["value"] = abbreviatedInteger(petCost)},
-                                            {["name"] = "Account", ["value"] = hide_text(plr.Name)},
-                                            {["name"] = "Account Diamonds", ["value"] = commasInteger(tonumber(plr.leaderstats.Diamonds.Value))}, -- value doesn't update in time so lemme just add bru
-                                            {["name"] = "Total Profit", ["value"] = abbreviatedInteger(get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???")))}
-                                        )
-                                        
-                                        if hasConverted then -- done selling converted pet, now we can convert again, snipe, do whatever
-                                            update_config(statusFolder, isSniping, readableConfig["PetId"], readableConfig["Diamonds"], isDepositing, false, converterTable)
-                                        end
-
-                                        serverhop(false)
-                                    end
+                                else
+                                    warn("Not enough gems to snipe!")
                                 end
-                            else
-                                warn("Not enough gems to snipe!")
                             end
                         end
                     end
-                end
-                
-                if should_server_hop() and not (mainStatus or altStatus or isDepositing) then                    
-                    serverhop(false)
+                    
+                    if should_server_hop() and not (mainStatus or altStatus or isDepositing) then                    
+                        serverhop(false)
+                    end
                 end
             end
         end
