@@ -2,15 +2,14 @@
     Optimizations
     
     # Synapse
-        - Resource Limiter
         - Auto launch (removes beta client)
         - Unlockfps (for resource limiter)
 
-    # Internal
+    # Internal (roblox)
         - Lower graphics in settings
 
-    # External
-        - Launch roblox as administrator (double removes beta client)
+    # External (roblox)
+        - Perm launch roblox as administrator (double removes beta client)
         - Increase launch delay for account manager (120 relaunch 60+ launch)
         - Smallest window size
         - Set priortiy affinity (process lasso or task manager)
