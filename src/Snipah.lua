@@ -19,22 +19,16 @@
     The only thing that i think is really ugly is the inventory stuff I have in place but idec anymore
 ]]
 
---[[
-    To fix
-
-    - https://imgur.com/a/cwiASrR | If this error for sniper then delete config and serverhop 
-]]
-
 shared.Config = {
-    WebhookURL = "",
+    WebhookURL = "https://discord.com/api/webhooks/1088213616920104971/K0h2klT4kiM7C0fhxV1vImxV945fN6jZa8ciRZhOEEDLolqTwYaaDX7kQ0qGvr2VN31X",
 
     DemandFactor = 4, -- (%) The higher the less the pet will sell for. More info in the petValues gist
 
-    AutoSell = true, -- Resells the sniped pet using cosmic values as a gauge for price
-    AutoGift = true, -- Transfers funds to target account once total gems reach target profit
+    AutoSell = true, -- Transfers funds to target account once total gems reach target profit
+    AutoGift = true, -- Will transfer funds to target account once total gems reach target profit
     AutoHugeMachine = true, -- Will transfer exclusives from alt accounts to target account and convert exclusives into a sellable huge pet (Target account must have 100+ storage)
 
-    ToSnipe = { -- (CASE SENSITIVE SO DON'T MESS UP) Types: Titanic, Huge, Exclusive. Sub-categories are included (rainbow, gold, etc).
+    ToSnipe = { -- Types: Titanic, Huge, Exclusive. Sub-categories are included (rainbow, gold, etc)
         "Titanic",
         "Huge",
         "Exclusive"
@@ -48,12 +42,12 @@ shared.Config = {
     },
 
     Gifter = {
-        targetAccount = "",
+        targetAccount = "ROGINBLUKI",
         targetTransferProfit = "1T" -- converted to integer
     },
 
     HugeConverter = {
-        targetAccount = ""
+        targetAccount = "consistshelfphrase"
     }
 }
 
@@ -98,7 +92,7 @@ local commasInteger = require(ReplicatedStorage.Library.Functions.Commas) -- "1,
 local hugeMachinePoints = require(ReplicatedStorage.Library.Shared.Functions.ComputeHugeMachinePoints)
 
 local hasLoaded, hasSetup, hasRequestedCost, actionCompleted, accountsLoaded, toggleCheck, convertedPets, statusUpdate = false, false, false, false, false, false, false, false
-local sniped, success = false, false
+local sniped, successfulSnipe = false, false
 
 local serverUpdateTime = 0.2
 
@@ -107,7 +101,7 @@ local oldSender = ""
 
 local map, booths, boothSpawns; -- booth stuff
 local mainFolder, statusFolder, isSniping, petName; -- folder stuff
-local snipedId, petCost, oldId -- identifier stuff
+local snipedId, petCost; -- identifier stuff
 local clientSave, petDirectory, initPlayerCount, tradeId; -- data stuff
 
 local places = {
@@ -319,7 +313,7 @@ function get_pet_name(id)
 
     local nameGrabber = require(ReplicatedStorage.Library.Shared.Functions.PetNameShort)
     local table = get_pet_table(id)
-    
+
     return nameGrabber(table)
 end
 
@@ -965,25 +959,25 @@ function snipe()
                                                             
                                                             ReplicatedStorage["Purchase Trading Booth Pet"]:InvokeServer(tonumber(v.Name), actualPet.Name)
                                                             
-                                                            task.wait(10)
+                                                            task.wait(3.5) -- bru don't forget the pet gets removed eventually from the booth GOOFY
                                                             
                                                             local hasBought, hasSold = get_recent_transaction()
                                                             
                                                             if hasBought then
                                                                 snipedId = actualPet.Name
                                                                 petCost = cost
+                                                                                                                                
+                                                                local actualName = get_pet_name(snipedId)
                                                                 
-                                                                success = true
+                                                                if not actionCompleted and actualName then
+                                                                    successfulSnipe = true
 
-                                                                local name = get_pet_name(snipedId)
-
-                                                                if not actionCompleted then
-                                                                    if table.find(shared.Config["PetBlacklist"], name) or (not table.find(shared.Config["ToSnipe"], purchaseValues[rarity][1])) then
+                                                                    if table.find(shared.Config["PetBlacklist"], actualName) or (not table.find(shared.Config["ToSnipe"], purchaseValues[rarity][1])) then
                                                                         actionCompleted = true
     
                                                                         delete_pet(snipedId, false)
     
-                                                                        webhook(shared.Config["WebhookURL"], "https://media.tenor.com/ivGGD4yGX-gAAAAC/euphoria-nate.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " deleted " .. name .. " from inventory")
+                                                                        webhook(shared.Config["WebhookURL"], "https://media.tenor.com/ivGGD4yGX-gAAAAC/euphoria-nate.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " deleted " .. actualName .. " from inventory")
                                                                     end
                                                                 end
                                                             end
@@ -996,13 +990,11 @@ function snipe()
                                         end
                                     end
                                     
-                                    if sniped then                                        
-                                        if success and not actionCompleted then
+                                    if sniped then                                   
+                                        if successfulSnipe and not actionCompleted then
                                             actionCompleted = true
                                             
                                             local configChoice = false
-
-                                            oldId = snipedId -- so the webhook can work
 
                                             if not shared.Config["AutoSell"] then
                                                 configChoice = true
@@ -1013,13 +1005,13 @@ function snipe()
                                             update_config(statusFolder, configChoice, snipedId, tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable) -- keep statuses
                                             
                                             webhook(shared.Config["WebhookURL"], "https://media.tenor.com/8GivaLmyidAAAAAC/nate-jacobs-nate-euphoria.gif", tonumber(0xC52727), "Supa Snipa 3000", "@everyone", "Snipe!",
-                                                {["name"] = "Pet", ["value"] = get_pet_name(oldId)},  
+                                                {["name"] = "Pet", ["value"] = get_pet_name(snipedId)}, -- use name from thread above
                                                 {["name"] = "Price", ["value"] = commasInteger(rawInteger(petCost))},
                                                 {["name"] = "Account", ["value"] = hide_text(plr.Name)}, -- Hide name under spoiler tag
                                                 {["name"] = "Account Diamonds", ["value"] = commasInteger(tonumber(plr.leaderstats.Diamonds.Value))}
                                             )
                                         end
-                                        
+
                                         serverhop(false)
                                     end
                                 else
