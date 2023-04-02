@@ -20,7 +20,7 @@
 ]]
 
 shared.Config = {
-    WebhookURL = "https://discord.com/api/webhooks/1088213616920104971/K0h2klT4kiM7C0fhxV1vImxV945fN6jZa8ciRZhOEEDLolqTwYaaDX7kQ0qGvr2VN31X",
+    WebhookURL = "",
 
     DemandFactor = 4, -- (%) The higher the less the pet will sell for. More info in the petValues gist
 
@@ -42,12 +42,12 @@ shared.Config = {
     },
 
     Gifter = {
-        targetAccount = "ROGINBLUKI",
+        targetAccount = "",
         targetTransferProfit = "1T" -- converted to integer
     },
 
     HugeConverter = {
-        targetAccount = "consistshelfphrase"
+        targetAccount = ""
     }
 }
 
