@@ -1150,16 +1150,16 @@ function snipe()
                                             serverhop(false)
                                         end
                                     end
-                                else
-                                    warn("Not enough gems to snipe!")
                                 end
+                            else
+                                warn("Not enough gems to snipe!")
                             end
                         end
                     end
-                    
-                    if should_server_hop() and not (mainStatus or altStatus or isDepositing) then                    
-                        serverhop(false)
-                    end
+                end
+                
+                if should_server_hop() and not (mainStatus or altStatus or isDepositing) then                    
+                    serverhop(false)
                 end
             end
         end
