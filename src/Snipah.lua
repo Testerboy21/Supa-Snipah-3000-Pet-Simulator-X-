@@ -955,34 +955,39 @@ function snipe()
                                                         end
                                                         
                                                         task.spawn(function()
-                                                            task.wait(serverUpdateTime + 0.01)
-                                                            
-                                                            ReplicatedStorage["Purchase Trading Booth Pet"]:InvokeServer(tonumber(v.Name), actualPet.Name)
-                                                            
-                                                            task.wait(3.5) -- bru don't forget the pet gets removed eventually from the booth GOOFY
-                                                            
-                                                            local hasBought, hasSold = get_recent_transaction()
-                                                            
-                                                            if hasBought then
-                                                                snipedId = actualPet.Name
-                                                                petCost = cost
-                                                                                                                                
-                                                                local actualName = get_pet_name(snipedId)
+                                                            if not actionCompleted then
+                                                                task.wait(serverUpdateTime + 0.01)
                                                                 
-                                                                if not actionCompleted and actualName then
-                                                                    successfulSnipe = true
+                                                                snipedId = actualPet.Name
 
-                                                                    if table.find(shared.Config["PetBlacklist"], actualName) or (not table.find(shared.Config["ToSnipe"], purchaseValues[rarity][1])) then
-                                                                        actionCompleted = true
-    
-                                                                        delete_pet(snipedId, false)
-    
-                                                                        webhook(shared.Config["WebhookURL"], "https://media.tenor.com/ivGGD4yGX-gAAAAC/euphoria-nate.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " deleted " .. actualName .. " from inventory")
+                                                                ReplicatedStorage["Purchase Trading Booth Pet"]:InvokeServer(tonumber(v.Name), actualPet.Name)
+                                                                
+                                                                task.wait(5)
+                                                                
+                                                                local hasBought, hasSold = get_recent_transaction()
+                                                                
+                                                                if hasBought then
+                                                                    petCost = cost
+                                                                                                                                    
+                                                                    local actualName = get_pet_name(snipedId)
+                                                                    
+                                                                    if actualName then
+                                                                        successfulSnipe = true
+
+                                                                        if table.find(shared.Config["PetBlacklist"], actualName) or (not table.find(shared.Config["ToSnipe"], purchaseValues[rarity][1])) then
+                                                                            actionCompleted = true
+        
+                                                                            delete_pet(snipedId, false)
+        
+                                                                            webhook(shared.Config["WebhookURL"], "https://media.tenor.com/ivGGD4yGX-gAAAAC/euphoria-nate.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " deleted " .. actualName .. " from inventory")
+                                                                        end
                                                                     end
+                                                                else
+                                                                    snipedId = nil
                                                                 end
+                                                                
+                                                                sniped = true
                                                             end
-                                                            
-                                                            sniped = true
                                                         end)
                                                     end
                                                 end
