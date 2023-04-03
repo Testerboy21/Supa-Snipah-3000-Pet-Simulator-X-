@@ -35,10 +35,7 @@ shared.Config = {
     },
 
     PetBlacklist = { -- Automatically deletes if they enter your inventory
-        "Scary Cat",
-        "Scary Corgi",
-        "Elf Cat",
-        "Elf Dog"
+        
     },
 
     Gifter = {
@@ -91,7 +88,7 @@ local abbreviatedInteger = require(ReplicatedStorage.Library.Functions.FormatAbb
 local commasInteger = require(ReplicatedStorage.Library.Functions.Commas) -- "1,000,000"
 local hugeMachinePoints = require(ReplicatedStorage.Library.Shared.Functions.ComputeHugeMachinePoints)
 
-local hasLoaded, hasSetup, hasRequestedCost, actionCompleted, accountsLoaded, toggleCheck, convertedPets, statusUpdate = false, false, false, false, false, false, false, false
+local hasLoaded, hasSetup, hasRequestedCost, actionCompleted, accountsLoaded, toggleCheck, convertedPets, statusUpdate, webhookSent = false, false, false, false, false, false, false, false, false
 local sniped, successfulSnipe = false, false
 
 local serverUpdateTime = 0.2
@@ -100,7 +97,7 @@ local cursor = cursor or ""
 local oldSender = ""
 
 local map, booths, boothSpawns; -- booth stuff
-local mainFolder, statusFolder, isSniping, petName; -- folder stuff
+local mainFolder, statusFolder, isSniping, petName, actualName; -- folder stuff
 local snipedId, petCost; -- identifier stuff
 local clientSave, petDirectory, initPlayerCount, tradeId; -- data stuff
 
@@ -941,7 +938,7 @@ function snipe()
                                                         rarity = "??"
                                                     end
                                                     
-                                                    if rawInteger(cost) <= get_purchase_value(rarity) then
+                                                    if rawInteger(cost) <= get_purchase_value(rarity) and table.find(shared.Config["ToSnipe"], purchaseValues[rarity][1]) then
                                                         local minimumPurchaseDist = (50) - 5 -- Actual min on server is 50 but buffer is included
                                                         local hrp = plr.Character.HumanoidRootPart
                                                         local booth = v.Booth
@@ -955,35 +952,36 @@ function snipe()
                                                         end
                                                         
                                                         task.spawn(function()
-                                                            if not actionCompleted then
+                                                            if not sniped then
                                                                 task.wait(serverUpdateTime + 0.01)
                                                                 
                                                                 snipedId = actualPet.Name
-
-                                                                ReplicatedStorage["Purchase Trading Booth Pet"]:InvokeServer(tonumber(v.Name), actualPet.Name)
+                                                                petCost = cost
+                                                                
+                                                                ReplicatedStorage["Purchase Trading Booth Pet"]:InvokeServer(tonumber(v.Name), snipedId)
                                                                 
                                                                 task.wait(5)
                                                                 
                                                                 local hasBought, hasSold = get_recent_transaction()
                                                                 
                                                                 if hasBought then
-                                                                    petCost = cost
-                                                                                                                                    
-                                                                    local actualName = get_pet_name(snipedId)
+                                                                    local success, error = pcall(function() 
+                                                                        actualName = get_pet_name(snipedId)
+                                                                    end)
                                                                     
-                                                                    if actualName then
+                                                                    if success then
                                                                         successfulSnipe = true
-
-                                                                        if table.find(shared.Config["PetBlacklist"], actualName) or (not table.find(shared.Config["ToSnipe"], purchaseValues[rarity][1])) then
-                                                                            actionCompleted = true
-        
-                                                                            delete_pet(snipedId, false)
-        
-                                                                            webhook(shared.Config["WebhookURL"], "https://media.tenor.com/ivGGD4yGX-gAAAAC/euphoria-nate.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " deleted " .. actualName .. " from inventory")
+    
+                                                                        if not webhookSent then
+                                                                            if table.find(shared.Config["PetBlacklist"], actualName) then
+                                                                                actionCompleted, webhookSent = true, true
+            
+                                                                                delete_pet(snipedId, false)
+            
+                                                                                webhook(shared.Config["WebhookURL"], "https://media.tenor.com/ivGGD4yGX-gAAAAC/euphoria-nate.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " deleted " .. actualName .. " from inventory")
+                                                                            end
                                                                         end
                                                                     end
-                                                                else
-                                                                    snipedId = nil
                                                                 end
                                                                 
                                                                 sniped = true
@@ -1010,7 +1008,7 @@ function snipe()
                                             update_config(statusFolder, configChoice, snipedId, tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable) -- keep statuses
                                             
                                             webhook(shared.Config["WebhookURL"], "https://media.tenor.com/8GivaLmyidAAAAAC/nate-jacobs-nate-euphoria.gif", tonumber(0xC52727), "Supa Snipa 3000", "@everyone", "Snipe!",
-                                                {["name"] = "Pet", ["value"] = get_pet_name(snipedId)}, -- use name from thread above
+                                                {["name"] = "Pet", ["value"] = actualName},
                                                 {["name"] = "Price", ["value"] = commasInteger(rawInteger(petCost))},
                                                 {["name"] = "Account", ["value"] = hide_text(plr.Name)}, -- Hide name under spoiler tag
                                                 {["name"] = "Account Diamonds", ["value"] = commasInteger(tonumber(plr.leaderstats.Diamonds.Value))}
