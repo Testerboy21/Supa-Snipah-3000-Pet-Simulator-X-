@@ -88,7 +88,7 @@ local abbreviatedInteger = require(ReplicatedStorage.Library.Functions.FormatAbb
 local commasInteger = require(ReplicatedStorage.Library.Functions.Commas) -- "1,000,000"
 local hugeMachinePoints = require(ReplicatedStorage.Library.Shared.Functions.ComputeHugeMachinePoints)
 
-local hasLoaded, hasSetup, hasRequestedCost, actionCompleted, accountsLoaded, toggleCheck, convertedPets, statusUpdate, webhookSent, hasName = false, false, false, false, false, false, false, false, false, false
+local hasLoaded, hasSetup, hasRequestedCost, actionCompleted, accountsLoaded, toggleCheck, convertedPets, statusUpdate, webhookSent, hasName, timeUp = false, false, false, false, false, false, false, false, false, false, false
 local sniped, successfulSnipe = false, false
 
 local serverUpdateTime = 0.2
@@ -992,6 +992,12 @@ function snipe()
                                                             local bought, sold = get_recent_transaction()
                                                             
                                                             if bought then
+                                                                task.spawn(function() -- incase I don't get the pet
+                                                                    task.wait(30)
+
+                                                                    timeUp = true
+                                                                end)
+
                                                                 repeat
                                                                     local success, error = pcall(function() 
                                                                         actualName = get_pet_name(snipedId)
@@ -1015,7 +1021,7 @@ function snipe()
                                                                             end
                                                                         end
                                                                     end
-                                                                until hasName
+                                                                until hasName or timeUp
                                                             end
                                                             
                                                             sniped = true
