@@ -34,8 +34,8 @@ shared.Config = {
         "Exclusive"
     },
 
-    PetBlacklist = { -- Automatically deletes if they enter your inventory
-        
+    PetBlacklist = { -- Automatically deletes if they enter your inventory | Example: Scary Cat, Elf Dog, etc.
+
     },
 
     Gifter = {
@@ -963,42 +963,40 @@ function snipe()
                                                         end
                                                         
                                                         task.spawn(function()
-                                                            if not sniped then
-                                                                task.wait(serverUpdateTime + 0.01)
-                                                                
-                                                                snipedId = actualPet.Name
-                                                                petCost = cost
-                                                                
-                                                                ReplicatedStorage["Purchase Trading Booth Pet"]:InvokeServer(tonumber(v.Name), snipedId)
-                                                                
-                                                                task.wait(10)
-                                                                
-                                                                local bought, sold = get_recent_transaction()
-                                                                
-                                                                if bought then
-                                                                    repeat
-                                                                        local success, error = pcall(function() 
-                                                                            actualName = get_pet_name(snipedId)
-                                                                        end)
-                                                                        
-                                                                        if success then
-                                                                            successfulSnipe, hasName = true, true
-        
-                                                                            if not webhookSent and hasName then
-                                                                                if table.find(shared.Config["PetBlacklist"], actualName) then
-                                                                                    actionCompleted, webhookSent = true, true
-                
-                                                                                    delete_pet(snipedId, false)
-                
-                                                                                    webhook(shared.Config["WebhookURL"], "https://media.tenor.com/ivGGD4yGX-gAAAAC/euphoria-nate.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " deleted " .. actualName .. " from inventory")
-                                                                                end
+                                                            task.wait(serverUpdateTime + 0.01)
+                                                            
+                                                            snipedId = actualPet.Name
+                                                            petCost = cost
+                                                            
+                                                            ReplicatedStorage["Purchase Trading Booth Pet"]:InvokeServer(tonumber(v.Name), snipedId)
+                                                            
+                                                            task.wait(10)
+                                                            
+                                                            local bought, sold = get_recent_transaction()
+                                                            
+                                                            if bought then
+                                                                repeat
+                                                                    local success, error = pcall(function() 
+                                                                        actualName = get_pet_name(snipedId)
+                                                                    end)
+                                                                    
+                                                                    if success then
+                                                                        successfulSnipe, hasName = true, true
+    
+                                                                        if not webhookSent and hasName then
+                                                                            if table.find(shared.Config["PetBlacklist"], actualName) then
+                                                                                actionCompleted, webhookSent = true, true
+            
+                                                                                delete_pet(snipedId, false)
+            
+                                                                                webhook(shared.Config["WebhookURL"], "https://media.tenor.com/ivGGD4yGX-gAAAAC/euphoria-nate.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " deleted " .. actualName .. " from inventory")
                                                                             end
                                                                         end
-                                                                    until hasName
-                                                                end
-                                                                
-                                                                sniped = true
+                                                                    end
+                                                                until hasName
                                                             end
+                                                            
+                                                            sniped = true
                                                         end)
                                                     end
                                                 end
