@@ -44,7 +44,7 @@ shared.Config = {
     },
 
     HugeConverter = {
-        TargetAccount = ""
+        TargetAccount = "",
         AccountsPerSession = 4 -- X accounts will have to total up to 100+. Cannot exceed 12 (max player limit).
     }
 }
