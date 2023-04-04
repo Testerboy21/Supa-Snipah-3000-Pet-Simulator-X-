@@ -88,7 +88,7 @@ local abbreviatedInteger = require(ReplicatedStorage.Library.Functions.FormatAbb
 local commasInteger = require(ReplicatedStorage.Library.Functions.Commas) -- "1,000,000"
 local hugeMachinePoints = require(ReplicatedStorage.Library.Shared.Functions.ComputeHugeMachinePoints)
 
-local hasLoaded, hasSetup, hasRequestedCost, actionCompleted, accountsLoaded, toggleCheck, convertedPets, statusUpdate, webhookSent = false, false, false, false, false, false, false, false, false
+local hasLoaded, hasSetup, hasRequestedCost, actionCompleted, accountsLoaded, toggleCheck, convertedPets, statusUpdate, webhookSent, hasName = false, false, false, false, false, false, false, false, false, false
 local sniped, successfulSnipe = false, false
 
 local serverUpdateTime = 0.2
@@ -159,9 +159,19 @@ function serverhop(isLowPlayer)
         pcall(function() body = HttpService:JSONDecode(req.Body) end)
         
         if body and body.data then
-            for i, v in next, body.data do
+            local currentPing;
+            
+            for i,v in next, body.data do
                 if type(v) == "table" and tonumber(v.playing) and tonumber(v.maxPlayers) and v.playing < v.maxPlayers and v.id ~= game.JobId then
-                    table.insert(servers, 1, v.id)
+                    if not currentPing then
+                        currentPing = v.ping
+                    else
+                        if v.ping < currentPing then
+                            currentPing = v.ping
+                            
+                            table.insert(servers, 1, v.id)
+                        end
+                    end
                 end 
             end
         end
@@ -275,8 +285,6 @@ function get_recent_transaction()
 
     for i,v in pairs(messageLog:GetChildren()) do
         if v:IsA("Frame") then
-            v.Name = i
-            
             local textLabel = v:FindFirstChild("TextLabel")
             local labelText = textLabel.Text
             local found = string.find(labelText, "purchased")
@@ -289,8 +297,11 @@ function get_recent_transaction()
                 
                 buyer, owner = buyer:gsub(" ", ""), owner:gsub(" ", "")
                 
-                if (buyer == plr.DisplayName or buyer == plr.Name) or (owner == plr.DisplayName or owner == plr.Name) then
-                    hasBought, hasSold = buyer, owner
+                if (buyer == plr.DisplayName or buyer == plr.Name) then
+                    hasBought = buyer
+                    
+                elseif (owner == plr.DisplayName or owner == plr.Name) then
+                    hasSold = owner
                 end
             end
         end
@@ -511,7 +522,7 @@ function snipe()
                     
                     if shared.Config["AutoHugeMachine"] and not isDepositing and not mainStatus and not hasConverted then
                         if get_total("Points") >= 100 then -- point requirement for free huge (common preston L)
-                            if #get_target_accounts(points) <= 11 then -- Don't want to exceed max player limit
+                            if #get_target_accounts(points) <= 10 then -- Don't want to exceed max player limit
                                 if isMain and clientSave.MaxSlots >= 100 then
                                     local converterTable = {points, true, altStatus, allStatus, readableConfig["ConverterInfo"][4]}
 
@@ -960,28 +971,30 @@ function snipe()
                                                                 
                                                                 ReplicatedStorage["Purchase Trading Booth Pet"]:InvokeServer(tonumber(v.Name), snipedId)
                                                                 
-                                                                task.wait(5)
+                                                                task.wait(10)
                                                                 
-                                                                local hasBought, hasSold = get_recent_transaction()
+                                                                local bought, sold = get_recent_transaction()
                                                                 
-                                                                if hasBought then
-                                                                    local success, error = pcall(function() 
-                                                                        actualName = get_pet_name(snipedId)
-                                                                    end)
-                                                                    
-                                                                    if success then
-                                                                        successfulSnipe = true
-    
-                                                                        if not webhookSent then
-                                                                            if table.find(shared.Config["PetBlacklist"], actualName) then
-                                                                                actionCompleted, webhookSent = true, true
-            
-                                                                                delete_pet(snipedId, false)
-            
-                                                                                webhook(shared.Config["WebhookURL"], "https://media.tenor.com/ivGGD4yGX-gAAAAC/euphoria-nate.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " deleted " .. actualName .. " from inventory")
+                                                                if bought then
+                                                                    repeat
+                                                                        local success, error = pcall(function() 
+                                                                            actualName = get_pet_name(snipedId)
+                                                                        end)
+                                                                        
+                                                                        if success then
+                                                                            successfulSnipe, hasName = true, true
+        
+                                                                            if not webhookSent and hasName then
+                                                                                if table.find(shared.Config["PetBlacklist"], actualName) then
+                                                                                    actionCompleted, webhookSent = true, true
+                
+                                                                                    delete_pet(snipedId, false)
+                
+                                                                                    webhook(shared.Config["WebhookURL"], "https://media.tenor.com/ivGGD4yGX-gAAAAC/euphoria-nate.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " deleted " .. actualName .. " from inventory")
+                                                                                end
                                                                             end
                                                                         end
-                                                                    end
+                                                                    until hasName
                                                                 end
                                                                 
                                                                 sniped = true
@@ -1084,7 +1097,7 @@ function snipe()
                                     
                                     local petId = readableConfig["PetId"]
 
-                                    local hasBought, hasSold = get_recent_transaction()
+                                    local bought, sold = get_recent_transaction()
                                     local tradingBooth = get_trading_booth()
                                     
                                     if tradingBooth then
@@ -1130,7 +1143,7 @@ function snipe()
                                         end
                                     end
 
-                                    if hasSold and not actionCompleted then
+                                    if sold and not actionCompleted then
                                         actionCompleted = true
                                         
                                         task.wait(1.5)
