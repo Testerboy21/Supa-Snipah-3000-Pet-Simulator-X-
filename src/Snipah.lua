@@ -22,7 +22,7 @@
 shared.Config = {
     WebhookURL = "",
 
-    DemandFactor = 4, -- (%) The higher the less the pet will sell for. More info in the petValues gist
+    DemandFactor = 4, -- (%) The higher the less the pet will sell for. More info in the petValues gist. 0 means raw value.
 
     AutoSell = true, -- Transfers funds to target account once total gems reach target profit
     AutoGift = true, -- Will transfer funds to target account once total gems reach target profit
@@ -308,6 +308,23 @@ function get_recent_transaction()
     end
     
     return hasBought, hasSold
+end
+
+function get_pet_type_from_name(name) -- For our value grabber function
+    local validTypes = {"Huge", "Titanic"}
+    local petType;
+    
+    for i,v in pairs(validTypes) do
+        if string.match(name, v) then
+            petType = v
+        end
+    end
+    
+    if not petType then
+        petType = "Exclusive" -- Since exclusive isn't explicity in the pet name  
+    end
+    
+    return petType
 end
 
 function get_pet_name(id)
@@ -984,7 +1001,12 @@ function snipe()
                                                                         successfulSnipe, hasName = true, true
     
                                                                         if not webhookSent and hasName then
-                                                                            if table.find(shared.Config["PetBlacklist"], actualName) then
+                                                                            local goodPetType = get_pet_type_from_name(actualName) -- don't want to delete a huge scary cat, huge elf, etc
+
+                                                                            local blacklistTable = shared.Config["PetBlacklist"]
+                                                                            local foundBadPet = table.find(blacklistTable, actualName)
+
+                                                                            if string.find(actualName, blacklistTable[foundBadPet] and not string.find(actualName, goodPetType)) then
                                                                                 actionCompleted, webhookSent = true, true
             
                                                                                 delete_pet(snipedId, false)
@@ -1029,24 +1051,6 @@ function snipe()
                                         serverhop(false)
                                     end
                                 else
-                                    -- Booth selling thread
-                                    local function get_pet_type_from_name(name) -- For our value grabber function
-                                        local validTypes = {"Huge", "Titanic"}
-                                        local petType;
-                                        
-                                        for i,v in pairs(validTypes) do
-                                            if string.match(name, v) then
-                                                petType = v
-                                            end
-                                        end
-                                        
-                                        if not petType then
-                                            petType = "Exclusive" -- Since exclusive isn't explicity in the pet name  
-                                        end
-                                        
-                                        return petType
-                                    end
-                                    
                                     local function get_trading_booth()
                                         local function get_open_booth()
                                             local openBooth;
