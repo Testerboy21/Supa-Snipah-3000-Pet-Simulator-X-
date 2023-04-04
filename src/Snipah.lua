@@ -540,7 +540,7 @@ function snipe()
                     
                     if shared.Config["AutoHugeMachine"] and not isDepositing and not mainStatus and not hasConverted then
                         if get_total("Points") >= 100 then -- point requirement for free huge (common preston L)
-                            if #get_target_accounts(points) <= shared.Config["HugeConverter"]["AccountsPerSession"] then
+                            if #get_target_accounts(points) <= math.clamp(shared.Config["HugeConverter"]["AccountsPerSession"], 1, 11) then
                                 if isMain and clientSave.MaxSlots >= 100 then
                                     local converterTable = {points, true, altStatus, allStatus, readableConfig["ConverterInfo"][4]}
 
