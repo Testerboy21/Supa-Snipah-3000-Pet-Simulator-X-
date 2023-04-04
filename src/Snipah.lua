@@ -22,7 +22,7 @@
 shared.Config = {
     WebhookURL = "",
 
-    DemandFactor = 4, -- (%) The higher the less the pet will sell for. More info in the petValues gist. 0 means raw value.
+    DemandFactor = 4, -- (%) The higher the less the pet will sell for. More info in the petValues gist
 
     AutoSell = true, -- Transfers funds to target account once total gems reach target profit
     AutoGift = true, -- Will transfer funds to target account once total gems reach target profit
@@ -34,17 +34,18 @@ shared.Config = {
         "Exclusive"
     },
 
-    PetBlacklist = { -- Automatically deletes if they enter your inventory | Example: Scary Cat, Elf Dog, etc.
-
+    PetBlacklist = { -- Automatically deletes if they enter your inventory
+        
     },
 
     Gifter = {
-        targetAccount = "",
+        TargetAccount = "",
         targetTransferProfit = "1T" -- converted to integer
     },
 
     HugeConverter = {
-        targetAccount = ""
+        TargetAccount = ""
+        AccountsPerSession = 4 -- X accounts will have to total up to 100+. Cannot exceed 12 (max player limit).
     }
 }
 
@@ -520,7 +521,7 @@ function snipe()
                 local isSniping = readableConfig["Sniping"]
                 local hasConverted = readableConfig["hasConverted"]
 
-                local isMain = plr.Name == shared.Config["HugeConverter"]["targetAccount"]
+                local isMain = plr.Name == shared.Config["HugeConverter"]["TargetAccount"]
 
                 local points, pets = get_huge_machine_points()
 
@@ -539,7 +540,7 @@ function snipe()
                     
                     if shared.Config["AutoHugeMachine"] and not isDepositing and not mainStatus and not hasConverted then
                         if get_total("Points") >= 100 then -- point requirement for free huge (common preston L)
-                            if #get_target_accounts(points) <= 10 then -- Don't want to exceed max player limit
+                            if #get_target_accounts(points) <= shared.Config["HugeConverter"]["AccountsPerSession"] then
                                 if isMain and clientSave.MaxSlots >= 100 then
                                     local converterTable = {points, true, altStatus, allStatus, readableConfig["ConverterInfo"][4]}
 
@@ -575,7 +576,7 @@ function snipe()
                                         task.wait(serverUpdateTime) -- just incase
 
                                         ReplicatedStorage["Send Mail"]:InvokeServer({
-                                            Recipient = shared.Config["Gifter"]["targetAccount"],
+                                            Recipient = shared.Config["Gifter"]["TargetAccount"],
                                             Diamonds = transferAmount, -- Keep diamonds for sniping,
                                             Pets = {},
                                             Message = ""
@@ -865,7 +866,7 @@ function snipe()
                                                 task.spawn(function()
                                                     task.wait(30)
 
-                                                    ReplicatedStorage["Send Trade Invite"]:InvokeServer(game.Players:FindFirstChild(shared.Config["HugeConverter"]["targetAccount"]))
+                                                    ReplicatedStorage["Send Trade Invite"]:InvokeServer(game.Players:FindFirstChild(shared.Config["HugeConverter"]["TargetAccount"]))
                                                 end)
 
                                                 if trading.Enabled and not actionCompleted then -- should be an open trade .Enabled event
@@ -992,12 +993,12 @@ function snipe()
                                                             local bought, sold = get_recent_transaction()
                                                             
                                                             if bought then
-                                                                task.spawn(function() -- incase I don't get the pet
-                                                                    task.wait(30)
-
+                                                                --[[task.spawn(function()
+                                                                    task.wait(60)
+                                                                    
                                                                     timeUp = true
-                                                                end)
-
+                                                                end)]]
+                                                                
                                                                 repeat
                                                                     local success, error = pcall(function() 
                                                                         actualName = get_pet_name(snipedId)
@@ -1011,17 +1012,19 @@ function snipe()
 
                                                                             local blacklistTable = shared.Config["PetBlacklist"]
                                                                             local foundBadPet = table.find(blacklistTable, actualName)
-
-                                                                            if string.find(actualName, blacklistTable[foundBadPet] and not string.find(actualName, goodPetType)) then
-                                                                                actionCompleted, webhookSent = true, true
-            
-                                                                                delete_pet(snipedId, false)
-            
-                                                                                webhook(shared.Config["WebhookURL"], "https://media.tenor.com/ivGGD4yGX-gAAAAC/euphoria-nate.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " deleted " .. actualName .. " from inventory")
+                                                                            
+                                                                            if foundBadPet then
+                                                                                if string.find(actualName, blacklistTable[foundBadPet]) and not string.find(actualName, goodPetType) then
+                                                                                    actionCompleted, webhookSent = true, true
+                
+                                                                                    delete_pet(snipedId, false)
+                
+                                                                                    webhook(shared.Config["WebhookURL"], "https://media.tenor.com/ivGGD4yGX-gAAAAC/euphoria-nate.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " deleted " .. actualName .. " from inventory")
+                                                                                end
                                                                             end
                                                                         end
                                                                     end
-                                                                until hasName or timeUp
+                                                                until hasName --[[or timeUp]]
                                                             end
                                                             
                                                             sniped = true
