@@ -993,11 +993,11 @@ function snipe()
                                                             local bought, sold = get_recent_transaction()
                                                             
                                                             if bought then
-                                                                --[[task.spawn(function()
+                                                                task.spawn(function()
                                                                     task.wait(60)
                                                                     
                                                                     timeUp = true
-                                                                end)]]
+                                                                end)
                                                                 
                                                                 repeat
                                                                     local success, error = pcall(function() 
@@ -1024,7 +1024,7 @@ function snipe()
                                                                             end
                                                                         end
                                                                     end
-                                                                until hasName --[[or timeUp]]
+                                                                until hasName or timeUp
                                                             end
                                                             
                                                             sniped = true
