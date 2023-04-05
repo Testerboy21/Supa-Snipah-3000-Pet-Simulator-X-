@@ -1009,12 +1009,9 @@ function snipe()
     
                                                                         if not webhookSent and hasName then
                                                                             local goodPetType = get_pet_type_from_name(actualName) -- don't want to delete a huge scary cat, huge elf, etc
-
-                                                                            local blacklistTable = shared.Config["PetBlacklist"]
-                                                                            local foundBadPet = table.find(blacklistTable, actualName)
                                                                             
-                                                                            if foundBadPet then
-                                                                                if string.find(actualName, blacklistTable[foundBadPet]) and not string.find(actualName, goodPetType) then
+                                                                            for i,v in pairs(shared.Config["PetBlacklist"]) do
+                                                                                if string.find(actualName, v) and not string.find(actualName, goodPetType) then
                                                                                     actionCompleted, webhookSent = true, true
                 
                                                                                     delete_pet(snipedId, false)
