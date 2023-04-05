@@ -167,7 +167,7 @@ function serverhop(isLowPlayer)
                     if not currentPing then
                         currentPing = v.ping
                     else
-                        if v.ping < currentPing then
+                        if v.ping and v.ping < currentPing then
                             currentPing = v.ping
                             
                             table.insert(servers, 1, v.id)
