@@ -517,7 +517,7 @@ function snipe()
                 -- Automatic actions thread
                 local mainStatus, altStatus, allStatus = readableConfig["ConverterInfo"][1], readableConfig["ConverterInfo"][2], readableConfig["ConverterInfo"][3]
 
-                local isDepositing = readableConfig["Depositing"]
+                local isDepositing = readableConfig["Deposit"]
                 local isSniping = readableConfig["Sniping"]
                 local hasConverted = readableConfig["hasConverted"]
 
@@ -539,7 +539,7 @@ function snipe()
                                 pcall(function() targetConfig = HttpService:JSONDecode(readfile(targetFolder)) end)
                                 
                                 if targetConfig then
-                                    if targetConfig["Diamonds"] > get_purchase_value("???") and not targetConfig["Depositing"] then
+                                    if targetConfig["Diamonds"] > get_purchase_value("???") and not targetConfig["Deposit"] then
                                         converterTable = {targetConfig["Points"], targetConfig["ConverterInfo"][1], targetConfig["ConverterInfo"][2], targetConfig["ConverterInfo"][3], targetConfig["ConverterInfo"][4]}
 
                                         update_config(targetFolder, targetConfig["Sniping"], targetConfig["PetId"], targetConfig["Diamonds"], true, targetConfig["hasConverted"], converterTable)
@@ -798,18 +798,18 @@ function snipe()
                                                     if targetConfig["ConverterInfo"][4] ~= game.JobId and targetConfig["Points"] > 0 then -- update alts to join main                                         
                                                         converterTable = {targetConfig["Points"], targetConfig["ConverterInfo"][1], true, targetConfig["ConverterInfo"][3], game.JobId}
                                                         
-                                                        update_config(targetFolder, targetConfig["Sniping"], targetConfig["PetId"], targetConfig["Diamonds"], targetConfig["Depositing"], targetConfig["hasConverted"], converterTable)
+                                                        update_config(targetFolder, targetConfig["Sniping"], targetConfig["PetId"], targetConfig["Diamonds"], targetConfig["Deposit"], targetConfig["hasConverted"], converterTable)
                                                     else
                                                         if altCount == (#targetAccounts) and not allStatus then -- all are ready
                                                             converterTable = {targetConfig["Points"], targetConfig["ConverterInfo"][1], targetConfig["ConverterInfo"][2], true, targetConfig["ConverterInfo"][4]}
                                                             
-                                                            update_config(targetFolder, targetConfig["Sniping"], targetConfig["PetId"], targetConfig["Diamonds"], targetConfig["Depositing"], targetConfig["hasConverted"], converterTable)
+                                                            update_config(targetFolder, targetConfig["Sniping"], targetConfig["PetId"], targetConfig["Diamonds"], targetConfig["Deposit"], targetConfig["hasConverted"], converterTable)
 
                                                             accountsLoaded = true
                                                         else -- all are NOT ready
                                                             converterTable = {targetConfig["Points"], targetConfig["ConverterInfo"][1], targetConfig["ConverterInfo"][2], false, targetConfig["ConverterInfo"][4]} 
                                                             
-                                                            update_config(targetFolder, targetConfig["Sniping"], targetConfig["PetId"], targetConfig["Diamonds"], targetConfig["Depositing"], targetConfig["hasConverted"], converterTable)
+                                                            update_config(targetFolder, targetConfig["Sniping"], targetConfig["PetId"], targetConfig["Diamonds"], targetConfig["Deposit"], targetConfig["hasConverted"], converterTable)
                                                         end
                                                     end
                                                 end
