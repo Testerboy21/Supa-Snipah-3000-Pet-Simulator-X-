@@ -528,12 +528,23 @@ function snipe()
                 local converterTable = {points, mainStatus, altStatus, allStatus, readableConfig["ConverterInfo"][4]}
 
                 if not statusUpdate then
-                    if shared.Config["AutoGift"] and not isDepositing then 
+                    if shared.Config["AutoGift"] then 
                         local totalProfit = get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???"))
 
-                        if rawInteger(totalProfit) >= rawInteger(shared.Config["Gifter"]["targetTransferProfit"]) then 
-                            if (tonumber(plr.leaderstats.Diamonds.Value) > get_purchase_value("???")) then -- make sure account actually has enough diamonds to cover for the sniping minimum
-                                update_config(statusFolder, isSniping, readableConfig["PetId"], readableConfig["Diamonds"], true, hasConverted, converterTable) -- so I can yield and keep current farming status
+                        if rawInteger(totalProfit) >= rawInteger(shared.Config["Gifter"]["targetTransferProfit"]) then
+                            for i,v in pairs(listfiles(mainFolder)) do -- update account configs to deposit
+                                local targetFolder = v
+                                local targetConfig;
+
+                                pcall(function() targetConfig = HttpService:JSONDecode(readfile(targetFolder)) end)
+                                
+                                if targetConfig then
+                                    if targetConfig["Diamonds"] > get_purchase_value("???") and not targetConfig["Depositing"] then
+                                        converterTable = {targetConfig["Points"], targetConfig["ConverterInfo"][1], targetConfig["ConverterInfo"][2], targetConfig["ConverterInfo"][3], targetConfig["ConverterInfo"][4]}
+
+                                        update_config(targetFolder, targetConfig["Sniping"], targetConfig["PetId"], targetConfig["Diamonds"], true, targetConfig["hasConverted"], converterTable)
+                                    end
+                                end
                             end
                         end
                     end
