@@ -22,7 +22,7 @@
 shared.Config = {
     WebhookURL = "",
 
-    DemandFactor = 4, -- (%) The higher the less the pet will sell for. More info in the petValues gist
+    DemandFactor = 3, -- (%) The higher the less the pet will sell for. More info in the petValues gist
 
     AutoSell = true, -- Transfers funds to target account once total gems reach target profit
     AutoGift = true, -- Will transfer funds to target account once total gems reach target profit
@@ -98,7 +98,7 @@ local cursor = cursor or ""
 local oldSender = ""
 
 local map, booths, boothSpawns; -- booth stuff
-local mainFolder, statusFolder, isSniping, petName, actualName; -- folder stuff
+local mainFolder, configFile, isSniping, petName, actualName; -- folder stuff
 local snipedId, petCost; -- identifier stuff
 local clientSave, petDirectory, initPlayerCount, tradeId; -- data stuff
 
@@ -481,7 +481,7 @@ function setup()
     catch_logs()
     
     mainFolder = "Sniper"
-    statusFolder = mainFolder .. "\\" .. plr.Name .. ".json"
+    configFile = mainFolder .. "\\" .. plr.Name .. ".json"
     
     map = workspace:WaitForChild("__MAP")
     initPlayerCount = #game.Players:GetPlayers()
@@ -493,10 +493,10 @@ function setup()
         makefolder(mainFolder)
     end
     
-    if not isfile(statusFolder) then
+    if not isfile(configFile) then
         local points, pets = get_huge_machine_points()
 
-        update_config(statusFolder, true, "", tonumber(plr.leaderstats.Diamonds.Value), false, false, {points, false, false, false, ""}) -- Format: {Points, mainStatus, altStatus, allStatus, TargetJobId}
+        update_config(configFile, true, "", tonumber(plr.leaderstats.Diamonds.Value), false, false, {points, false, false, false, ""}) -- Format: {Points, mainStatus, altStatus, allStatus, TargetJobId}
     end
 end
 
@@ -511,7 +511,7 @@ function snipe()
         if hasLoaded then
             local readableConfig;
             
-            pcall(function() readableConfig = HttpService:JSONDecode(readfile(statusFolder)) end)
+            pcall(function() readableConfig = HttpService:JSONDecode(readfile(configFile)) end)
 
             if readableConfig then
                 -- Automatic actions thread
@@ -555,7 +555,7 @@ function snipe()
                                 if isMain and clientSave.MaxSlots >= 100 then
                                     local converterTable = {points, true, altStatus, allStatus, readableConfig["ConverterInfo"][4]}
 
-                                    update_config(statusFolder, isSniping, readableConfig["PetId"], readableConfig["Diamonds"], isDepositing, hasConverted, converterTable)
+                                    update_config(configFile, isSniping, readableConfig["PetId"], readableConfig["Diamonds"], isDepositing, hasConverted, converterTable)
                                 end
                             end
                         end
@@ -595,7 +595,7 @@ function snipe()
                                         
                                         task.wait(1.5)
 
-                                        update_config(statusFolder, isSniping, readableConfig["PetId"], tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
+                                        update_config(configFile, isSniping, readableConfig["PetId"], tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
 
                                         webhook(shared.Config["WebhookURL"], "https://media.tenor.com/O7Ugp91_nV0AAAAC/nate-jacobs.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " transferred " .. abbreviatedInteger(transferAmount) .. " gems",
                                             {["name"] = "Total Profit", ["value"] = abbreviatedInteger(get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???")))}
@@ -606,7 +606,7 @@ function snipe()
                                 local totalProfit = get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???"))
 
                                 if totalProfit <= 0 then -- wait until all accounts are done depositing
-                                    update_config(statusFolder, isSniping, readableConfig["PetId"], tonumber(plr.leaderstats.Diamonds.Value), false, hasConverted, converterTable)
+                                    update_config(configFile, isSniping, readableConfig["PetId"], tonumber(plr.leaderstats.Diamonds.Value), false, hasConverted, converterTable)
                                 end
                             end
                         else
@@ -627,7 +627,7 @@ function snipe()
                                 return tradeId
                             end
                             
-                            local function convert_exclusives() -- will use for single and multi conversion
+                            local function convert_exclusives_to_egg() -- will use for single and multi conversion
                                 local hugeGui = plr.PlayerGui.HugeMachine
                                 local petDirectory = hugeGui.Frame.Pets.Holder
                                 
@@ -673,10 +673,10 @@ function snipe()
 
                                     task.wait(serverUpdateTime)
 
-                                    convert_exclusives()
+                                    convert_exclusives_to_egg()
 
                                     convertedPets = true
-                                else
+                                else -- Open egg
                                     toggleCheck = false
 
                                     local pets = plr.PlayerGui.Inventory.Frame.Main.Pets.Normal
@@ -713,19 +713,19 @@ function snipe()
                                             local name = get_pet_name(v.Name)
 
                                             if name == petName then -- unlock pet, hasConverted to true, setting mainstatus to false, and selling pet
+                                                convertedPets = false
+
                                                 ReplicatedStorage["Lock Pet"]:InvokeServer({
                                                     [v.Name] = false
                                                 })
 
                                                 converterTable = {points, false, false, false, ""}
                                                         
-                                                update_config(statusFolder, false, v.Name, readableConfig["Diamonds"], isDepositing, true, converterTable)
+                                                update_config(configFile, false, v.Name, readableConfig["Diamonds"], isDepositing, true, converterTable)
 
                                                 webhook(shared.Config["WebhookURL"], "https://64.media.tumblr.com/a172c0b32163a64bc29443bcf2dfe00d/tumblr_inline_ptz8alU02Q1txm9sv_400.gif", nil, "Supa Snipa 3000", "@everyone", hide_text(plr.Name) .. " converted exclusives into a " .. name,
                                                     {["name"] = "Total Points Left", ["value"] = abbreviatedInteger(get_total("Points"))}
                                                 )
-
-                                                convertedPets = false
 
                                                 break
                                             end
@@ -915,7 +915,7 @@ function snipe()
                                                 -- toggle statuses to false and resume sniping
                                                 converterTable = {points, false, false, false, ""}
                                                         
-                                                update_config(statusFolder, isSniping, readableConfig["PetId"], readableConfig["Diamonds"], isDepositing, hasConverted, converterTable)
+                                                update_config(configFile, isSniping, readableConfig["PetId"], readableConfig["Diamonds"], isDepositing, hasConverted, converterTable)
                                             end
                                         end
                                     end
@@ -1055,7 +1055,7 @@ function snipe()
                                                 snipedId = ""
                                             end
 
-                                            update_config(statusFolder, configChoice, snipedId, tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable) -- keep statuses
+                                            update_config(configFile, configChoice, snipedId, tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable) -- keep statuses
                                             
                                             webhook(shared.Config["WebhookURL"], "https://media.tenor.com/8GivaLmyidAAAAAC/nate-jacobs-nate-euphoria.gif", tonumber(0xC52727), "Supa Snipa 3000", "@everyone", "Snipe!",
                                                 {["name"] = "Pet", ["value"] = actualName},
@@ -1116,20 +1116,27 @@ function snipe()
                                     
                                     local petId = readableConfig["PetId"]
 
-                                    local bought, sold = get_recent_transaction()
                                     local tradingBooth = get_trading_booth()
                                     
                                     if tradingBooth then
                                         if not hasRequestedCost then
-                                            petName = get_pet_name(petId)
+                                            local success, error = pcall(function()
+                                                petName = get_pet_name(petId)
+                                            end)
 
-                                            local petType = get_pet_type_from_name(petName)
-                                            
-                                            hasRequestedCost = true -- put it above the syn.request call below cuz it suspends the thread and crashes my game lol
+                                            if error then -- corrupted config // already sold pet and did not update
+                                                delfile(configFile)
                                                 
-                                            petValues = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/339b64b48e8c03a1628f3e73629435fa/raw/d5a6ee1c9613911ee08f4c9505180e47c2c6c967/ValueGrabber.lua"))()
-                                            
-                                            petCost = petValues(petType, petName, shared.Config["DemandFactor"])
+                                                serverhop(false)
+                                            else
+                                                local petType = get_pet_type_from_name(petName)
+                                                
+                                                hasRequestedCost = true -- put it above the syn.request call below cuz it suspends the thread and crashes my game lol
+                                                    
+                                                petValues = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/339b64b48e8c03a1628f3e73629435fa/raw/d5a6ee1c9613911ee08f4c9505180e47c2c6c967/ValueGrabber.lua"))()
+                                                
+                                                petCost = petValues(petType, petName, shared.Config["DemandFactor"])
+                                            end
                                         end
 
                                         if typeof(petCost) == "number" then
@@ -1148,10 +1155,10 @@ function snipe()
                                                 task.wait(serverUpdateTime * 1500)
 
                                                 if hasRequestedCost and not petCost then
-                                                    if not actionCompleted then
-                                                        actionCompleted = true
+                                                    if not webhookSent then
+                                                        webhookSent = true
 
-                                                        update_config(statusFolder, true, "", tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
+                                                        update_config(configFile, true, "", tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
                                                         
                                                         webhook(shared.Config["WebhookURL"], "https://64.media.tumblr.com/918059fea5f2e970fa1eaa4b361746cf/ec5f9c88ed936d4f-f1/s400x600/4f1d490ee6065de66efc43c02e1d2b9c2c081d2f.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " could not find pet value for " .. get_pet_name(petId))
                                                     end
@@ -1162,12 +1169,14 @@ function snipe()
                                         end
                                     end
 
+                                    local bought, sold = get_recent_transaction()
+
                                     if sold and not actionCompleted then
                                         actionCompleted = true
                                         
                                         task.wait(1.5)
 
-                                        update_config(statusFolder, true, "", tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
+                                        update_config(configFile, true, "", tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
 
                                         webhook(shared.Config["WebhookURL"], "https://64.media.tumblr.com/95f63e8e43bdbf73cec4e335fcb47473/598a0a3af7af511b-3e/s500x750/47cb4656753649ca190e90a63d6e5781c6fa9f4e.gif", tonumber(0xACDC7C), "Supa Snipa 3000", nil, "Sale!", 
                                             {["name"] = "Pet", ["value"] = petName},  
@@ -1178,7 +1187,7 @@ function snipe()
                                         )
                                         
                                         if hasConverted then -- done selling converted pet, now we can convert again, snipe, do whatever
-                                            update_config(statusFolder, isSniping, readableConfig["PetId"], readableConfig["Diamonds"], isDepositing, false, converterTable)
+                                            update_config(configFile, true, "", tonumber(plr.leaderstats.Diamonds.Value), isDepositing, false, converterTable)
                                         end
 
                                         serverhop(false)
