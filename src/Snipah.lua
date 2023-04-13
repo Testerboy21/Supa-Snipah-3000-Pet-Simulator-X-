@@ -806,19 +806,11 @@ function snipe()
                                                             update_config(targetFolder, targetConfig["Sniping"], targetConfig["PetId"], targetConfig["Diamonds"], targetConfig["Deposit"], targetConfig["hasConverted"], converterTable)
 
                                                             accountsLoaded = true
-                                                        else -- all are NOT ready
-                                                            converterTable = {targetConfig["Points"], targetConfig["ConverterInfo"][1], targetConfig["ConverterInfo"][2], false, targetConfig["ConverterInfo"][4]} 
-                                                            
-                                                            update_config(targetFolder, targetConfig["Sniping"], targetConfig["PetId"], targetConfig["Diamonds"], targetConfig["Deposit"], targetConfig["hasConverted"], converterTable)
                                                         end
                                                     end
                                                 end
                                             end
                                         else
-                                            if altCount ~= (#targetAccounts) then
-                                                accountsLoaded = false
-                                            end
-
                                             local settings = plr.PlayerGui.Settings
                                             local tradingToggle = settings.Frame.Container.Trading.Toggle.Label.Text
 
@@ -913,7 +905,7 @@ function snipe()
                                                 end
                                             else
                                                 -- toggle statuses to false and resume sniping
-                                                converterTable = {points, false, false, false, ""}
+                                                converterTable = {0, false, false, false, ""}
                                                         
                                                 update_config(configFile, isSniping, readableConfig["PetId"], readableConfig["Diamonds"], isDepositing, hasConverted, converterTable)
                                             end
@@ -1117,7 +1109,8 @@ function snipe()
                                     local petId = readableConfig["PetId"]
 
                                     local tradingBooth = get_trading_booth()
-                                    
+                                    local bought, sold = get_recent_transaction()
+
                                     if tradingBooth then
                                         if not hasRequestedCost then
                                             local success, error = pcall(function()
@@ -1169,8 +1162,6 @@ function snipe()
                                         end
                                     end
 
-                                    local bought, sold = get_recent_transaction()
-
                                     if sold and not actionCompleted then
                                         actionCompleted = true
                                         
@@ -1192,6 +1183,15 @@ function snipe()
 
                                         serverhop(false)
                                     end
+
+                                    -- Ghost bug fix (just straight up wouldn't change config or send notification and I cba to find out why)
+                                    task.spawn(function()
+                                        if readableConfig["Diamonds"] < tonumber(plr.leaderstats.Diamonds.Value) then -- if I've sold then wait a minute before manually serverhopping
+                                            task.wait(60)
+
+                                            serverhop(false)
+                                        end
+                                    end)
                                 end
                             else
                                 warn("Not enough gems to snipe!")
