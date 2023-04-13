@@ -1187,7 +1187,7 @@ function snipe()
                                     -- Ghost bug fix (just straight up wouldn't change config or send notification and I cba to find out why)
                                     task.spawn(function()
                                         if readableConfig["Diamonds"] < tonumber(plr.leaderstats.Diamonds.Value) then -- if I've sold then wait a minute before manually serverhopping
-                                            task.wait(60)
+                                            task.wait((serverUpdateTime * 1500) * 2)
 
                                             serverhop(false)
                                         end
