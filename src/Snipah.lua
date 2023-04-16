@@ -52,7 +52,7 @@ shared.Config = {
 repeat task.wait() until game:IsLoaded()
 
 -- Dependencies
-local ResourceLimiter = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/437989dd9b6e5ec2ea807a65acb740ca/raw/1b1f1f38dba23d7f1181c3bbbe7d21631690ab96/ResourceLimiter.lua"))()
+local ResourceLimiter = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/437989dd9b6e5ec2ea807a65acb740ca/raw/ca218b1d9d61c4d04569b10114509787e5a2e524/ResourceLimiter.lua"))()
 local webhook = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/3fc7ca9f505ba4c36adc2a3e49b3f2f9/raw/f5201e21c6a8cf28702effde7c53aadde2fa3146/Webhook.lua"))()
 local dehash = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/91600c1bd5581f069201620fcaaa3242/raw/e7cbc1e0f4fe63b0f67c7bc2c414675192aad588/Dehasher.lua"))()({
     "Toggle Setting",
@@ -715,9 +715,11 @@ function snipe()
                                             if name == petName then -- unlock pet, hasConverted to true, setting mainstatus to false, and selling pet
                                                 convertedPets = false
 
-                                                ReplicatedStorage["Lock Pet"]:InvokeServer({
-                                                    [v.Name] = false
-                                                })
+                                                repeat
+                                                    ReplicatedStorage["Lock Pet"]:InvokeServer({
+                                                        [v.Name] = false
+                                                    })
+                                                until not v:FindFirstChild("Locked").Visible
 
                                                 converterTable = {points, false, false, false, ""}
                                                         
@@ -800,7 +802,7 @@ function snipe()
                                                         
                                                         update_config(targetFolder, targetConfig["Sniping"], targetConfig["PetId"], targetConfig["Diamonds"], targetConfig["Deposit"], targetConfig["hasConverted"], converterTable)
                                                     else
-                                                        if altCount == (#targetAccounts) and not allStatus then -- all are ready
+                                                        if altCount == (#targetAccounts) then -- all are ready
                                                             converterTable = {targetConfig["Points"], targetConfig["ConverterInfo"][1], targetConfig["ConverterInfo"][2], true, targetConfig["ConverterInfo"][4]}
                                                             
                                                             update_config(targetFolder, targetConfig["Sniping"], targetConfig["PetId"], targetConfig["Diamonds"], targetConfig["Deposit"], targetConfig["hasConverted"], converterTable)
