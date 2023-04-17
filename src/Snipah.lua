@@ -35,7 +35,7 @@ shared.Config = {
     },
 
     PetBlacklist = { -- Automatically deletes if they enter your inventory
-        
+
     },
 
     Gifter = {
@@ -438,7 +438,9 @@ function get_target_accounts(pointLimit)
         end
         
         table.sort(sorted, function(a, b)
-            return a[2] > b[2] -- sorting second column by ascending order
+            if typeof(a[2]) == "number" and typeof(b[2]) == "number" then
+                return a[2] > b[2] -- sorting second column by ascending order
+            end
         end)
         
         return sorted
@@ -590,9 +592,9 @@ function snipe()
                                             Pets = {},
                                             Message = ""
                                         })
-                                        
+
                                         task.wait(1.5)
-                                            
+
                                         if tonumber(plr.leaderstats.Diamonds.Value) <= get_purchase_value("???") then
                                             update_config(configFile, isSniping, readableConfig["PetId"], tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
 
