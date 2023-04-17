@@ -576,11 +576,9 @@ function snipe()
                             if #mailBox:GetChildren() > 5 then -- if mailbox is loaded
                                 local transferAmount = (tonumber(plr.leaderstats.Diamonds.Value) - get_purchase_value("???"))
 
-                                if not actionCompleted then
-                                    actionCompleted = true
-
+                                repeat
                                     task.spawn(function()
-                                        task.wait(30) -- 30 second server limit before you can interact with machines, trades, etc.
+                                        task.wait(30) -- wait before you can interact with machines, trades, etc.
 
                                         plr.Character.HumanoidRootPart.CFrame = mailBox.Opened.CFrame
                                         
@@ -592,17 +590,23 @@ function snipe()
                                             Pets = {},
                                             Message = ""
                                         })
-                                        
-                                        task.wait(1.5)
 
-                                        update_config(configFile, isSniping, readableConfig["PetId"], tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
+                                        if tonumber(plr.leaderstats.Diamonds.Value) <= get_purchase_value("???") then
+                                            task.wait(1.5)
 
-                                        webhook(shared.Config["WebhookURL"], "https://media.tenor.com/O7Ugp91_nV0AAAAC/nate-jacobs.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " transferred " .. abbreviatedInteger(transferAmount) .. " gems",
-                                            {["name"] = "Total Profit", ["value"] = abbreviatedInteger(get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???")))}
-                                        )
+                                            update_config(configFile, isSniping, readableConfig["PetId"], tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
+
+                                            webhook(shared.Config["WebhookURL"], "https://media.tenor.com/O7Ugp91_nV0AAAAC/nate-jacobs.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " transferred " .. abbreviatedInteger(transferAmount) .. " gems",
+                                                {["name"] = "Total Profit", ["value"] = abbreviatedInteger(get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???")))}
+                                            )
+
+                                            actionCompleted = true
+                                        end
                                     end)
-                                end
+                                until actionCompleted
                                 
+                                -- Calculate profit after transferring
+
                                 local totalProfit = get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???"))
 
                                 if totalProfit <= 0 then -- wait until all accounts are done depositing
