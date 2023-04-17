@@ -590,10 +590,10 @@ function snipe()
                                             Pets = {},
                                             Message = ""
                                         })
-
+                                        
+                                        task.wait(1.5)
+                                            
                                         if tonumber(plr.leaderstats.Diamonds.Value) <= get_purchase_value("???") then
-                                            task.wait(1.5)
-
                                             update_config(configFile, isSniping, readableConfig["PetId"], tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
 
                                             webhook(shared.Config["WebhookURL"], "https://media.tenor.com/O7Ugp91_nV0AAAAC/nate-jacobs.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " transferred " .. abbreviatedInteger(transferAmount) .. " gems",
