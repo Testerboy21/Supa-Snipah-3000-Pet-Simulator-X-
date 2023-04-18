@@ -553,8 +553,8 @@ function snipe()
                     
                     if shared.Config["AutoHugeMachine"] and not isDepositing and not mainStatus and not hasConverted then
                         if get_total("Points") >= 100 then -- point requirement for free huge (common preston L)
-                            if #get_target_accounts(points) <= math.clamp(shared.Config["HugeConverter"]["AccountsPerSession"], 1, 11) then
-                                if isMain and clientSave.MaxSlots >= 100 then
+                            if isMain and #get_target_accounts(points) <= math.clamp(shared.Config["HugeConverter"]["AccountsPerSession"], 1, 11) then
+                                if clientSave.MaxSlots >= 100 then
                                     local converterTable = {points, true, altStatus, allStatus, readableConfig["ConverterInfo"][4]}
 
                                     update_config(configFile, isSniping, readableConfig["PetId"], readableConfig["Diamonds"], isDepositing, hasConverted, converterTable)
@@ -577,35 +577,39 @@ function snipe()
 
                             if #mailBox:GetChildren() > 5 then -- if mailbox is loaded
                                 local transferAmount = (tonumber(plr.leaderstats.Diamonds.Value) - get_purchase_value("???"))
+                                
+                                task.spawn(function()
+                                    if not actionCompleted then
+                                        repeat
+                                            task.wait(30) -- wait before you can interact with machines, trades, etc.
 
-                                repeat
-                                    task.spawn(function()
-                                        task.wait(30) -- wait before you can interact with machines, trades, etc.
+                                            plr.Character.HumanoidRootPart.CFrame = mailBox.Opened.CFrame
+                                            
+                                            task.wait(serverUpdateTime) -- just incase
 
-                                        plr.Character.HumanoidRootPart.CFrame = mailBox.Opened.CFrame
-                                        
-                                        task.wait(serverUpdateTime) -- just incase
+                                            ReplicatedStorage["Send Mail"]:InvokeServer({
+                                                Recipient = shared.Config["Gifter"]["TargetAccount"],
+                                                Diamonds = transferAmount, -- Keep diamonds for sniping,
+                                                Pets = {},
+                                                Message = ""
+                                            })
 
-                                        ReplicatedStorage["Send Mail"]:InvokeServer({
-                                            Recipient = shared.Config["Gifter"]["TargetAccount"],
-                                            Diamonds = transferAmount, -- Keep diamonds for sniping,
-                                            Pets = {},
-                                            Message = ""
-                                        })
+                                            task.wait(1.5)
 
-                                        task.wait(1.5)
+                                            if tonumber(plr.leaderstats.Diamonds.Value) <= get_purchase_value("???") then
+                                                update_config(configFile, isSniping, readableConfig["PetId"], tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
 
-                                        if tonumber(plr.leaderstats.Diamonds.Value) <= get_purchase_value("???") then
-                                            update_config(configFile, isSniping, readableConfig["PetId"], tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
+                                                webhook(shared.Config["WebhookURL"], "https://media.tenor.com/O7Ugp91_nV0AAAAC/nate-jacobs.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " transferred " .. abbreviatedInteger(transferAmount) .. " gems",
+                                                    {["name"] = "Total Profit", ["value"] = abbreviatedInteger(get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???")))}
+                                                )
+                                                
+                                                actionCompleted = true
 
-                                            webhook(shared.Config["WebhookURL"], "https://media.tenor.com/O7Ugp91_nV0AAAAC/nate-jacobs.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " transferred " .. abbreviatedInteger(transferAmount) .. " gems",
-                                                {["name"] = "Total Profit", ["value"] = abbreviatedInteger(get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???")))}
-                                            )
-
-                                            actionCompleted = true
-                                        end
-                                    end)
-                                until actionCompleted
+                                                break
+                                            end
+                                        until actionCompleted
+                                    end
+                                end)
                                 
                                 -- Calculate profit after transferring
 
