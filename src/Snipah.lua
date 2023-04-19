@@ -586,25 +586,33 @@ function snipe()
                                             plr.Character.HumanoidRootPart.CFrame = mailBox.Opened.CFrame
                                             
                                             task.wait(serverUpdateTime) -- just incase
+                                            
+                                            local success, error = pcall(function() 
+                                                ReplicatedStorage["Send Mail"]:InvokeServer({
+                                                    Recipient = shared.Config["Gifter"]["TargetAccount"],
+                                                    Diamonds = transferAmount, -- Keep diamonds for sniping,
+                                                    Pets = {},
+                                                    Message = ""
+                                                })
+                                            end)
+                                            
+                                            if error then
+                                                actionCompleted = true 
 
-                                            ReplicatedStorage["Send Mail"]:InvokeServer({
-                                                Recipient = shared.Config["Gifter"]["TargetAccount"],
-                                                Diamonds = transferAmount, -- Keep diamonds for sniping,
-                                                Pets = {},
-                                                Message = ""
-                                            })
+                                                break
+                                            end
 
                                             task.wait(1.5)
 
                                             if tonumber(plr.leaderstats.Diamonds.Value) <= get_purchase_value("???") then
+                                                actionCompleted = true
+
                                                 update_config(configFile, isSniping, readableConfig["PetId"], tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
 
                                                 webhook(shared.Config["WebhookURL"], "https://media.tenor.com/O7Ugp91_nV0AAAAC/nate-jacobs.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " transferred " .. abbreviatedInteger(transferAmount) .. " gems",
                                                     {["name"] = "Total Profit", ["value"] = abbreviatedInteger(get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???")))}
                                                 )
                                                 
-                                                actionCompleted = true
-
                                                 break
                                             end
                                         until actionCompleted
@@ -1001,7 +1009,7 @@ function snipe()
                                                             snipedId = actualPet.Name
                                                             petCost = cost
                                                             
-                                                            ReplicatedStorage["Purchase Trading Booth Pet"]:InvokeServer(tonumber(v.Name), snipedId)
+                                                            ReplicatedStorage["Purchase Trading Booth Pet"]:InvokeServer(tonumber(v.Name), snipedId, 1)
                                                             
                                                             task.wait(10)
                                                             
