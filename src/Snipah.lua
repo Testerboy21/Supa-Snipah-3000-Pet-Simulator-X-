@@ -1009,7 +1009,7 @@ function snipe()
                                                             snipedId = actualPet.Name
                                                             petCost = cost
                                                             
-                                                            ReplicatedStorage["Purchase Trading Booth Pet"]:InvokeServer(tonumber(v.Name), snipedId, 1)
+                                                            ReplicatedStorage["Purchase Trading Booth Pet"]:InvokeServer(tonumber(v.Name), snipedId, rawInteger(cost))
                                                             
                                                             task.wait(10)
                                                             
