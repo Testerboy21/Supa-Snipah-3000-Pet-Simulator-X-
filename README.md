@@ -5,9 +5,8 @@
 ## Features
 
 - Optimized booth teleport
-- Automatic pet seller
 - Realtime value parser from cosmic values (https://petsimulatorvalues.com/)
-- Automatic pet seller that utilizes the value parser
+- Automatic pet reseller that utilizes the value parser
 - Automatic gift at specified profit
 - Automatic huge machine (converts sniped exclusives across all accounts)
 - Built in resource limiter for those large account farms
