@@ -4,7 +4,7 @@
     # Synapse
         - Resource Limiter
         - Auto launch (removes beta client)
-        - Unlockfps (for resource limiter)
+        - Unlock fps (for resource limiter)
 
     # Internal
         - Lower graphics in settings
