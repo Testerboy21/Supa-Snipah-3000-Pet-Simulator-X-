@@ -34,18 +34,18 @@ shared.Config = {
         "Exclusive"
     },
 
-    PetBlacklist = { -- Automatically deletes if they enter your inventory
+    PetBlacklist = { -- [CASE SENSITIVE] Automatically deletes if they enter your inventory | Example: Scary Cat, Elf Dog, Hippomelon, etc
 
     },
 
     Gifter = {
         TargetAccount = "",
-        targetTransferProfit = "1T" -- converted to integer
+        targetTransferProfit = "1T" -- abbreviations supported, converted to integer
     },
 
     HugeConverter = {
         TargetAccount = "",
-        AccountsPerSession = 4 -- X accounts will have to total up to 100+. Cannot exceed 12 (max player limit).
+        AccountsPerSession = 4 -- X accounts will have to total up to 100+ exclusive points. Cannot exceed 12 (max player limit).
     }
 }
 
@@ -578,47 +578,39 @@ function snipe()
                             if #mailBox:GetChildren() > 5 then -- if mailbox is loaded
                                 local transferAmount = (tonumber(plr.leaderstats.Diamonds.Value) - get_purchase_value("???"))
                                 
-                                task.spawn(function()
-                                    if not actionCompleted then
-                                        repeat
-                                            task.wait(30) -- wait before you can interact with machines, trades, etc.
+                                if not actionCompleted then
+                                    actionCompleted = true
+                                    
+                                    task.wait(30) -- wait before you can interact with machines, trades, etc.
 
-                                            plr.Character.HumanoidRootPart.CFrame = mailBox.Opened.CFrame
+                                    plr.Character.HumanoidRootPart.CFrame = mailBox.Opened.CFrame
+                                    
+                                    task.wait(serverUpdateTime) -- just incase
+                                    
+                                    local success, error = pcall(function() 
+                                        ReplicatedStorage["Send Mail"]:InvokeServer({
+                                            Recipient = shared.Config["Gifter"]["TargetAccount"],
+                                            Diamonds = transferAmount, -- Keep diamonds for sniping,
+                                            Pets = {},
+                                            Message = ""
+                                        })
+                                    end)
+                                    
+                                    if error then
+                                        update_config(configFile, isSniping, readableConfig["PetId"], tonumber(plr.leaderstats.Diamonds.Value), false, hasConverted, converterTable)
+                                    else
+                                        task.wait(10)
+                                        
+                                        if tonumber(plr.leaderstats.Diamonds.Value) <= get_purchase_value("???") then
+                                            update_config(configFile, isSniping, readableConfig["PetId"], tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
                                             
-                                            task.wait(serverUpdateTime) -- just incase
-                                            
-                                            local success, error = pcall(function() 
-                                                ReplicatedStorage["Send Mail"]:InvokeServer({
-                                                    Recipient = shared.Config["Gifter"]["TargetAccount"],
-                                                    Diamonds = transferAmount, -- Keep diamonds for sniping,
-                                                    Pets = {},
-                                                    Message = ""
-                                                })
-                                            end)
-                                            
-                                            if error then
-                                                actionCompleted = true 
-
-                                                break
-                                            end
-
-                                            task.wait(1.5)
-
-                                            if tonumber(plr.leaderstats.Diamonds.Value) <= get_purchase_value("???") then
-                                                actionCompleted = true
-
-                                                update_config(configFile, isSniping, readableConfig["PetId"], tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
-
-                                                webhook(shared.Config["WebhookURL"], "https://media.tenor.com/O7Ugp91_nV0AAAAC/nate-jacobs.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " transferred " .. abbreviatedInteger(transferAmount) .. " gems",
-                                                    {["name"] = "Total Profit", ["value"] = abbreviatedInteger(get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???")))}
-                                                )
-                                                
-                                                break
-                                            end
-                                        until actionCompleted
+                                            webhook(shared.Config["WebhookURL"], "https://media.tenor.com/O7Ugp91_nV0AAAAC/nate-jacobs.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " transferred " .. abbreviatedInteger(transferAmount) .. " gems",
+                                                {["name"] = "Total Profit", ["value"] = abbreviatedInteger(get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???")))}
+                                            )
+                                        end
                                     end
-                                end)
-                                
+                                end
+
                                 -- Calculate profit after transferring
 
                                 local totalProfit = get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???"))
