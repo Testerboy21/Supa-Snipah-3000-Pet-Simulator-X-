@@ -23,12 +23,12 @@ shared.Config = {
     WebhookURL = "",
 
     DemandFactor = 3, -- (%) The higher the less the pet will sell for. More info in the petValues gist
-
-    AutoSell = true, -- Transfers funds to target account once total gems reach target profit
+    
+    AutoSell = true, -- Automatically resells sniped pet using gem value from cosmic
     AutoGift = true, -- Will transfer funds to target account once total gems reach target profit
     AutoHugeMachine = true, -- Will transfer exclusives from alt accounts to target account and convert exclusives into a sellable huge pet (Target account must have 100+ storage)
 
-    ToSnipe = { -- Types: Titanic, Huge, Exclusive. Sub-categories are included (rainbow, gold, etc)
+    ToSnipe = { -- [CASE SENSITIVE] Titanic, Huge, Exclusive. Sub-categories are included (rainbow, gold, etc)
         "Titanic",
         "Huge",
         "Exclusive"
@@ -40,7 +40,7 @@ shared.Config = {
 
     Gifter = {
         TargetAccount = "",
-        targetTransferProfit = "1T" -- abbreviations supported, converted to integer
+        targetTransferProfit = "1T" -- converted to integer
     },
 
     HugeConverter = {
