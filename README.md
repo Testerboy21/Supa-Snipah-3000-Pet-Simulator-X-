@@ -1,5 +1,4 @@
-# ~ Da Supa Snipa (Pet Simulator X Booth Sniper) ~
------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Da Supa Snipa (Pet Simulator X Booth Sniper)
 
 - Use on multiple accounts for best results
 
