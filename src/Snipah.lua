@@ -4,7 +4,7 @@
     # Synapse
         - Resource Limiter
         - Auto launch (removes beta client)
-        - Unlock fps (for resource limiter)
+        - Unlockfps (for resource limiter)
 
     # Internal
         - Lower graphics in settings
@@ -19,15 +19,12 @@
     The only thing that i think is really ugly is the inventory stuff I have in place but idec anymore
 ]]
 
-shared.Config = {
-    WebhookURL = "",
+shared.WebhookConfig = {
+    WebhookNotifications = false,
+    WebhookURL = ""
+}
 
-    DemandFactor = 3, -- (%) The higher the less the pet will sell for. More info in the petValues gist
-    
-    AutoSell = true, -- Automatically resells sniped pet using gem value from cosmic
-    AutoGift = true, -- Will transfer funds to target account once total gems reach target profit
-    AutoHugeMachine = true, -- Will transfer exclusives from alt accounts to target account and convert exclusives into a sellable huge pet (Target account must have 100+ storage)
-
+shared.SnipingConfig = {
     ToSnipe = { -- [CASE SENSITIVE] Titanic, Huge, Exclusive. Sub-categories are included (rainbow, gold, etc)
         "Titanic",
         "Huge",
@@ -36,16 +33,26 @@ shared.Config = {
 
     PetBlacklist = { -- [CASE SENSITIVE] Automatically deletes if they enter your inventory | Example: Scary Cat, Elf Dog, Hippomelon, etc
 
-    },
+    }
+}
 
-    Gifter = {
+shared.AutoConfig = {
+    AutoSell = true, -- Automatically resells sniped pet using gem value from cosmic
+    AutoGift = true, -- Will transfer funds to target account once total gems reach target profit
+    AutoHugeMachine = true, -- Will transfer exclusives from alt accounts to target account and convert exclusives into a sellable huge pet (Target account must have 100+ storage)
+
+    AutoSellDemandFactor = 3 -- (%) The higher the less the pet will sell for. More info in the petValues gist
+}
+
+shared.Recipients = {
+    AutoGifter = {
         TargetAccount = "",
         targetTransferProfit = "1T" -- converted to integer
     },
 
-    HugeConverter = {
+    AutoHugeMachine = {
         TargetAccount = "",
-        AccountsPerSession = 4 -- X accounts will have to total up to 100+ exclusive points. Cannot exceed 12 (max player limit).
+        AccountsPerSession = 5 -- X accounts will have to total up to 100+ exclusive points. Cannot exceed 12 (max player limit).
     }
 }
 
@@ -94,7 +101,6 @@ local sniped, successfulSnipe = false, false
 
 local serverUpdateTime = 0.2
 
-local cursor = cursor or ""
 local oldSender = ""
 
 local map, booths, boothSpawns; -- booth stuff
@@ -146,7 +152,8 @@ end
 
 function serverhop(isLowPlayer)
     local servers = {}
-    
+    local cursor = cursor or ""
+
     local teleportType = "Desc"
 
     if isLowPlayer then
@@ -194,7 +201,7 @@ function alt_in_server()
     for i,v in pairs(playerList) do
         if v.Name ~= plr.Name then
             if isfile(mainFolder .. "\\".. v.Name .. ".json") then
-                count = count + 1
+                count = count + 1 -- need count for other sections of script
             end
         end
     end
@@ -523,17 +530,17 @@ function snipe()
                 local isSniping = readableConfig["Sniping"]
                 local hasConverted = readableConfig["hasConverted"]
 
-                local isMain = plr.Name == shared.Config["HugeConverter"]["TargetAccount"]
+                local isMain = plr.Name == shared.Recipients["AutoHugeMachine"]["TargetAccount"]
 
                 local points, pets = get_huge_machine_points()
 
                 local converterTable = {points, mainStatus, altStatus, allStatus, readableConfig["ConverterInfo"][4]}
 
                 if not statusUpdate then
-                    if shared.Config["AutoGift"] then 
+                    if shared.AutoConfig["AutoGift"] then 
                         local totalProfit = get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???"))
 
-                        if rawInteger(totalProfit) >= rawInteger(shared.Config["Gifter"]["targetTransferProfit"]) then
+                        if rawInteger(totalProfit) >= rawInteger(shared.Recipients["AutoGifter"]["targetTransferProfit"]) then
                             for i,v in pairs(listfiles(mainFolder)) do -- update account configs to deposit
                                 local targetFolder = v
                                 local targetConfig;
@@ -551,9 +558,9 @@ function snipe()
                         end
                     end
                     
-                    if shared.Config["AutoHugeMachine"] and not isDepositing and not mainStatus and not hasConverted then
+                    if shared.AutoConfig["AutoHugeMachine"] and not isDepositing and not mainStatus and not hasConverted then
                         if get_total("Points") >= 100 then -- point requirement for free huge (common preston L)
-                            if isMain and #get_target_accounts(points) <= math.clamp(shared.Config["HugeConverter"]["AccountsPerSession"], 1, 11) then
+                            if isMain and #get_target_accounts(points) <= math.clamp(shared.Recipients["AutoHugeMachine"]["AccountsPerSession"], 1, 11) then
                                 if clientSave.MaxSlots >= 100 then
                                     local converterTable = {points, true, altStatus, allStatus, readableConfig["ConverterInfo"][4]}
 
@@ -589,7 +596,7 @@ function snipe()
                                     
                                     local success, error = pcall(function() 
                                         ReplicatedStorage["Send Mail"]:InvokeServer({
-                                            Recipient = shared.Config["Gifter"]["TargetAccount"],
+                                            Recipient = shared.Recipients["AutoGifter"]["TargetAccount"],
                                             Diamonds = transferAmount, -- Keep diamonds for sniping,
                                             Pets = {},
                                             Message = ""
@@ -604,9 +611,11 @@ function snipe()
                                         if tonumber(plr.leaderstats.Diamonds.Value) <= get_purchase_value("???") then
                                             update_config(configFile, isSniping, readableConfig["PetId"], tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
                                             
-                                            webhook(shared.Config["WebhookURL"], "https://media.tenor.com/O7Ugp91_nV0AAAAC/nate-jacobs.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " transferred " .. abbreviatedInteger(transferAmount) .. " gems",
-                                                {["name"] = "Total Profit", ["value"] = abbreviatedInteger(get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???")))}
-                                            )
+                                            if shared.WebhookConfig["WebhookNotifications"] then
+                                                webhook(shared.WebhookConfig["WebhookURL"], "https://media.tenor.com/O7Ugp91_nV0AAAAC/nate-jacobs.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " transferred " .. abbreviatedInteger(transferAmount) .. " gems",
+                                                    {["name"] = "Total Profit", ["value"] = abbreviatedInteger(get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???")))}
+                                                )
+                                            end
                                         end
                                     end
                                 end
@@ -735,9 +744,11 @@ function snipe()
                                                         
                                                 update_config(configFile, false, v.Name, readableConfig["Diamonds"], isDepositing, true, converterTable)
 
-                                                webhook(shared.Config["WebhookURL"], "https://64.media.tumblr.com/a172c0b32163a64bc29443bcf2dfe00d/tumblr_inline_ptz8alU02Q1txm9sv_400.gif", nil, "Supa Snipa 3000", "@everyone", hide_text(plr.Name) .. " converted exclusives into a " .. name,
-                                                    {["name"] = "Total Points Left", ["value"] = abbreviatedInteger(get_total("Points"))}
-                                                )
+                                                if shared.WebhookConfig["WebhookNotifications"] then
+                                                    webhook(shared.WebhookConfig["WebhookURL"], "https://64.media.tumblr.com/a172c0b32163a64bc29443bcf2dfe00d/tumblr_inline_ptz8alU02Q1txm9sv_400.gif", nil, "Supa Snipa 3000", "@everyone", hide_text(plr.Name) .. " converted exclusives into a " .. name,
+                                                        {["name"] = "Total Points Left", ["value"] = abbreviatedInteger(get_total("Points"))}
+                                                    )
+                                                end
 
                                                 break
                                             end
@@ -881,7 +892,7 @@ function snipe()
                                                 task.spawn(function()
                                                     task.wait(30)
 
-                                                    ReplicatedStorage["Send Trade Invite"]:InvokeServer(game.Players:FindFirstChild(shared.Config["HugeConverter"]["TargetAccount"]))
+                                                    ReplicatedStorage["Send Trade Invite"]:InvokeServer(game.Players:FindFirstChild(shared.Recipients["AutoHugeMachine"]["TargetAccount"]))
                                                 end)
 
                                                 if trading.Enabled and not actionCompleted then -- should be an open trade .Enabled event
@@ -982,7 +993,7 @@ function snipe()
                                                         rarity = "??"
                                                     end
                                                     
-                                                    if rawInteger(cost) <= get_purchase_value(rarity) and table.find(shared.Config["ToSnipe"], purchaseValues[rarity][1]) then
+                                                    if rawInteger(cost) <= get_purchase_value(rarity) and table.find(shared.SnipingConfig["ToSnipe"], purchaseValues[rarity][1]) then
                                                         local minimumPurchaseDist = (50) - 5 -- Actual min on server is 50 but buffer is included
                                                         local hrp = plr.Character.HumanoidRootPart
                                                         local booth = v.Booth
@@ -1025,13 +1036,15 @@ function snipe()
                                                                         if not webhookSent and hasName then
                                                                             local goodPetType = get_pet_type_from_name(actualName) -- don't want to delete a huge scary cat, huge elf, etc
                                                                             
-                                                                            for i,v in pairs(shared.Config["PetBlacklist"]) do
+                                                                            for i,v in pairs(shared.SnipingConfig["PetBlacklist"]) do
                                                                                 if string.find(actualName, v) and not string.find(actualName, goodPetType) then
                                                                                     actionCompleted, webhookSent = true, true
                 
                                                                                     delete_pet(snipedId, false)
-                
-                                                                                    webhook(shared.Config["WebhookURL"], "https://media.tenor.com/ivGGD4yGX-gAAAAC/euphoria-nate.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " deleted " .. actualName .. " from inventory")
+                                                                                    
+                                                                                    if shared.WebhookConfig["WebhookNotifications"] then
+                                                                                        webhook(shared.WebhookConfig["WebhookURL"], "https://media.tenor.com/ivGGD4yGX-gAAAAC/euphoria-nate.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " deleted " .. actualName .. " from inventory")
+                                                                                    end
                                                                                 end
                                                                             end
                                                                         end
@@ -1053,7 +1066,7 @@ function snipe()
                                             
                                             local configChoice = false
 
-                                            if not shared.Config["AutoSell"] then
+                                            if not shared.AutoConfig["AutoSell"] then
                                                 configChoice = true
 
                                                 snipedId = ""
@@ -1061,12 +1074,14 @@ function snipe()
 
                                             update_config(configFile, configChoice, snipedId, tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable) -- keep statuses
                                             
-                                            webhook(shared.Config["WebhookURL"], "https://media.tenor.com/8GivaLmyidAAAAAC/nate-jacobs-nate-euphoria.gif", tonumber(0xC52727), "Supa Snipa 3000", "@everyone", "Snipe!",
-                                                {["name"] = "Pet", ["value"] = actualName},
-                                                {["name"] = "Price", ["value"] = commasInteger(rawInteger(petCost))},
-                                                {["name"] = "Account", ["value"] = hide_text(plr.Name)}, -- Hide name under spoiler tag
-                                                {["name"] = "Account Diamonds", ["value"] = commasInteger(tonumber(plr.leaderstats.Diamonds.Value))}
-                                            )
+                                            if shared.WebhookConfig["WebhookNotifications"] then
+                                                webhook(shared.WebhookConfig["WebhookURL"], "https://media.tenor.com/8GivaLmyidAAAAAC/nate-jacobs-nate-euphoria.gif", tonumber(0xC52727), "Supa Snipa 3000", "@everyone", "Snipe!",
+                                                    {["name"] = "Pet", ["value"] = actualName},
+                                                    {["name"] = "Price", ["value"] = commasInteger(rawInteger(petCost))},
+                                                    {["name"] = "Account", ["value"] = hide_text(plr.Name)}, -- Hide name under spoiler tag
+                                                    {["name"] = "Account Diamonds", ["value"] = commasInteger(tonumber(plr.leaderstats.Diamonds.Value))}
+                                                )
+                                            end
                                         end
 
                                         serverhop(false)
@@ -1140,7 +1155,7 @@ function snipe()
                                                     
                                                 petValues = loadstring(game:HttpGet("https://gist.githubusercontent.com/Testerboy21/339b64b48e8c03a1628f3e73629435fa/raw/d5a6ee1c9613911ee08f4c9505180e47c2c6c967/ValueGrabber.lua"))()
                                                 
-                                                petCost = petValues(petType, petName, shared.Config["DemandFactor"])
+                                                petCost = petValues(petType, petName, shared.AutoConfig["AutoSellDemandFactor"])
                                             end
                                         end
 
@@ -1165,7 +1180,9 @@ function snipe()
 
                                                         update_config(configFile, true, "", tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
                                                         
-                                                        webhook(shared.Config["WebhookURL"], "https://64.media.tumblr.com/918059fea5f2e970fa1eaa4b361746cf/ec5f9c88ed936d4f-f1/s400x600/4f1d490ee6065de66efc43c02e1d2b9c2c081d2f.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " could not find pet value for " .. get_pet_name(petId))
+                                                        if shared.WebhookConfig["WebhookNotifications"] then
+                                                            webhook(shared.WebhookConfig["WebhookURL"], "https://64.media.tumblr.com/918059fea5f2e970fa1eaa4b361746cf/ec5f9c88ed936d4f-f1/s400x600/4f1d490ee6065de66efc43c02e1d2b9c2c081d2f.gif", nil, "Supa Snipa 3000", nil, hide_text(plr.Name) .. " could not find pet value for " .. get_pet_name(petId))
+                                                        end
                                                     end
 
                                                     serverhop(false)
@@ -1181,13 +1198,15 @@ function snipe()
 
                                         update_config(configFile, true, "", tonumber(plr.leaderstats.Diamonds.Value), isDepositing, hasConverted, converterTable)
 
-                                        webhook(shared.Config["WebhookURL"], "https://64.media.tumblr.com/95f63e8e43bdbf73cec4e335fcb47473/598a0a3af7af511b-3e/s500x750/47cb4656753649ca190e90a63d6e5781c6fa9f4e.gif", tonumber(0xACDC7C), "Supa Snipa 3000", nil, "Sale!", 
-                                            {["name"] = "Pet", ["value"] = petName},  
-                                            {["name"] = "Price", ["value"] = abbreviatedInteger(petCost)},
-                                            {["name"] = "Account", ["value"] = hide_text(plr.Name)},
-                                            {["name"] = "Account Diamonds", ["value"] = commasInteger(tonumber(plr.leaderstats.Diamonds.Value))}, -- value doesn't update in time so lemme just add bru
-                                            {["name"] = "Total Profit", ["value"] = abbreviatedInteger(get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???")))}
-                                        )
+                                        if shared.WebhookConfig["WebhookNotifications"] then
+                                            webhook(shared.WebhookConfig["WebhookURL"], "https://64.media.tumblr.com/95f63e8e43bdbf73cec4e335fcb47473/598a0a3af7af511b-3e/s500x750/47cb4656753649ca190e90a63d6e5781c6fa9f4e.gif", tonumber(0xACDC7C), "Supa Snipa 3000", nil, "Sale!", 
+                                                {["name"] = "Pet", ["value"] = petName},  
+                                                {["name"] = "Price", ["value"] = abbreviatedInteger(petCost)},
+                                                {["name"] = "Account", ["value"] = hide_text(plr.Name)},
+                                                {["name"] = "Account Diamonds", ["value"] = commasInteger(tonumber(plr.leaderstats.Diamonds.Value))}, -- value doesn't update in time so lemme just add bru
+                                                {["name"] = "Total Profit", ["value"] = abbreviatedInteger(get_total("Diamonds") - (#listfiles(mainFolder) * get_purchase_value("???")))}
+                                            )
+                                        end
                                         
                                         if hasConverted then -- done selling converted pet, now we can convert again, snipe, do whatever
                                             update_config(configFile, true, "", tonumber(plr.leaderstats.Diamonds.Value), isDepositing, false, converterTable)
@@ -1206,7 +1225,15 @@ function snipe()
                                     end)
                                 end
                             else
-                                warn("Not enough gems to snipe!")
+                                if not actionCompleted then
+                                    actionCompleted = true
+
+                                    if shared.WebhookConfig["WebhookNotifications"] then
+                                        webhook(shared.WebhookConfig["WebhookURL"], nil, nil, "Supa Snipa 3000", "@everyone", "Not enough gems to snipe!",
+                                            {["name"] = "Account", ["value"] = hide_text(plr.Name)}
+                                        )
+                                    end
+                                end
                             end
                         end
                     end
