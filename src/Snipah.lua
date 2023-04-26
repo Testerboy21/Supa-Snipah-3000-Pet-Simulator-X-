@@ -32,7 +32,11 @@ shared.SnipingConfig = {
     },
 
     PetBlacklist = { -- [CASE SENSITIVE] Automatically deletes if they enter your inventory | Example: Scary Cat, Elf Dog, Hippomelon, etc
-
+        "Scary Cat",
+        "Scary Corgi",
+        "Elf Cat",
+        "Elf Dog",
+        "Hippomelon"
     }
 }
 
@@ -888,49 +892,67 @@ function snipe()
                                         if allStatus then
                                             if points > 0 then
                                                 local trading = plr.PlayerGui.Trading
+                                                local messages = plr.PlayerGui.Message
+                                                local settings = plr.PlayerGui.Settings
+                                                local tradingToggle = settings.Frame.Container.Trading.Toggle.Label.Text
 
-                                                task.spawn(function()
-                                                    task.wait(30)
+                                                if tradingToggle ~= "Disabled" then
+                                                    ReplicatedStorage["Toggle Setting"]:InvokeServer("Trading")
+                                                else
+                                                    task.spawn(function()
+                                                        task.wait(30)
 
-                                                    ReplicatedStorage["Send Trade Invite"]:InvokeServer(game.Players:FindFirstChild(shared.Recipients["AutoHugeMachine"]["TargetAccount"]))
-                                                end)
+                                                        ReplicatedStorage["Send Trade Invite"]:InvokeServer(game.Players:FindFirstChild(shared.Recipients["AutoHugeMachine"]["TargetAccount"]))
+                                                    end)
+                                                    
+                                                    if trading.Enabled then 
+                                                        if not actionCompleted then -- should be an open trade .Enabled event
+                                                            if not tradeId then
+                                                                tradeId = get_trade_id()
+                                                            end
 
-                                                if trading.Enabled and not actionCompleted then -- should be an open trade .Enabled event
-                                                    if not tradeId then
-                                                        tradeId = get_trade_id()
-                                                    end
+                                                            local buttonCount = 0
 
-                                                    local buttonCount = 0
+                                                            local tradeDirectory = trading.Frame.Trade
+                                                            local clientPets = tradeDirectory.Client.Pets
+                                                            local receiverPets = tradeDirectory.Player.Pets
 
-                                                    local tradeDirectory = trading.Frame.Trade
-                                                    local clientPets = tradeDirectory.Client.Pets
-                                                    local receiverPets = tradeDirectory.Player.Pets
+                                                            for i,v in pairs(clientPets:GetChildren()) do -- trade good pets to main
+                                                                if v:IsA("TextButton") then
+                                                                    if table.find(pets, v.Name) then
+                                                                        ReplicatedStorage["Add Trade Pet"]:InvokeServer(tradeId, v.Name)
 
-                                                    for i,v in pairs(clientPets:GetChildren()) do -- trade good pets to main
-                                                        if v:IsA("TextButton") then
-                                                            if table.find(pets, v.Name) then
-                                                                ReplicatedStorage["Add Trade Pet"]:InvokeServer(tradeId, v.Name)
+                                                                        buttonCount = buttonCount + 1
+                                                                    end
+                                                                end
+                                                            end
+                                                            
+                                                            buttonCount = buttonCount + (#receiverPets:GetChildren() - 2)
 
-                                                                buttonCount = buttonCount + 1
+                                                            ReplicatedStorage["Ready Trade"]:InvokeServer(tradeId, buttonCount)
+
+                                                            if plr.PlayerGui.Message.Frame.Desc.Text:match("?") then -- incase of an "are you sure?" prompt
+                                                                firesignal(plr.PlayerGui.Message.Frame.Yes.Activated)
+                                                            end
+
+                                                            actionCompleted = true
+                                                        end
+                                                    else
+                                                        if messages.Enabled then -- ignore all other trading prompts
+                                                            if messages.Frame.Ok.Visible then
+                                                                firesignal(messages.Frame.Ok.Activated)
+                                                                
+                                                            elseif messages.Frame.No.Visible then
+                                                                firesignal(messages.Frame.No.Activated)
                                                             end
                                                         end
                                                     end
-                                                    
-                                                    buttonCount = buttonCount + (#receiverPets:GetChildren() - 2)
-
-                                                    ReplicatedStorage["Ready Trade"]:InvokeServer(tradeId, buttonCount)
-
-                                                    if plr.PlayerGui.Message.Frame.Desc.Text:match("?") then -- incase of an "are you sure?" prompt
-                                                        firesignal(plr.PlayerGui.Message.Frame.Yes.Activated)
-                                                    end
-
-                                                    actionCompleted = true
+                                                else
+                                                    -- toggle statuses to false and resume sniping
+                                                    converterTable = {0, false, false, false, ""}
+                                                            
+                                                    update_config(configFile, isSniping, readableConfig["PetId"], readableConfig["Diamonds"], isDepositing, hasConverted, converterTable)
                                                 end
-                                            else
-                                                -- toggle statuses to false and resume sniping
-                                                converterTable = {0, false, false, false, ""}
-                                                        
-                                                update_config(configFile, isSniping, readableConfig["PetId"], readableConfig["Diamonds"], isDepositing, hasConverted, converterTable)
                                             end
                                         end
                                     end
